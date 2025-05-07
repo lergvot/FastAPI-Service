@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <div class="quote">
+        <p>Цитата дня: {{ quotes['Quote'] }}</p>
+        <p>{{ quotes['Author'] }}</p>
+    </div>
+
+    <meta charset="UTF-8">
+    <title>Заметки и Погода</title>
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Roboto Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1976d2;
+            --primary-dark: #1565c0;
+            --surface: #fff;
+            --background: #f5f7fa;
+            --border-radius: 16px;
+            --shadow: 0 2px 8px rgba(25, 118, 210, 0.10);
+        }
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: 'Roboto', sans-serif;
+            background: var(--background);
+        }
+        .dashboard-container {
+            max-width: 1100px;
+            margin: 2rem auto;
+            padding: 1.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+            justify-content: center;
+        }
+        .dashboard-card {
+            background: var(--surface);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 2rem 1.5rem 1.5rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            min-width: 320px;
+            max-width: 420px;
+            flex: 1 1 340px;
+        }
+        .dashboard-card.weather {
+            background: #e3f2fd;
+            min-width: 260px;
+            max-width: 340px;
+            padding: 1.5rem 1.2rem 1.2rem 1.2rem;
+        }
+        h1 {
+            color: var(--primary);
+            font-weight: 500;
+            margin: 0 0 1.5rem 0;
+            letter-spacing: 0.5px;
+            font-size: 2rem;
+            text-align: center;
+        }
+        .note-form {
+            display: flex;
+            gap: 0.5rem;
+            background: #f0f4fa;
+            border-radius: var(--border-radius);
+            padding: 0.5rem;
+            box-shadow: 0 1px 3px rgba(25, 118, 210, 0.04);
+        }
+        .note-form input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            font-size: 1rem;
+            padding: 0.75rem 1rem;
+            outline: none;
+        }
+        .note-form button {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 0 1.2rem;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .note-form button:hover {
+            background: var(--primary-dark);
+        }
+        ul.notes {
+            list-style: none;
+            padding: 0;
+            margin: 1rem 0 0 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.7rem;
+        }
+        ul.notes li {
+            background: #f8fafc;
+            border-radius: var(--border-radius);
+            padding: 0.9rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 2px rgba(25, 118, 210, 0.03);
+            font-size: 1.05rem;
+        }
+        ul.notes li a {
+            color: #e53935;
+            text-decoration: none;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            transition: color 0.2s;
+        }
+        ul.notes li a:hover {
+            color: #b71c1c;
+        }
+        .weather-title {
+            font-size: 1.15rem;
+            font-weight: 500;
+            color: var(--primary);
+            margin-bottom: 0.7rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .weather-title .material-icons {
+            font-size: 1.3rem;
+        }
+        .weather-item {
+            color: #333;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.3rem;
+        }
+        footer {
+            margin-top: 1.5rem;
+            text-align: center;
+            font-size: 0.95rem;
+            color: #888;
+            background: transparent;
+        }
+        footer a {
+            color: var(--primary);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        footer a:hover {
+            color: var(--primary-dark);
+        }
+        @media (max-width: 900px) {
+            .dashboard-container {
+                flex-direction: column;
+                gap: 1.2rem;
+                padding: 1rem 0.5rem;
+            }
+            .dashboard-card, .dashboard-card.weather {
+                max-width: 100%;
+                min-width: unset;
+            }
+        }
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.3rem;
+            }
+            .dashboard-card, .dashboard-card.weather, .note-form, ul.notes li {
+                padding: 0.7rem 0.5rem;
+            }
+            .dashboard-card {
+                padding-top: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="dashboard-card">
+            <h1>Мои заметки</h1>
+            <form method="post" action="/notes/add" class="note-form">
+                <input type="text" name="note" placeholder="Новая заметка" required>
+                <button type="submit">
+                    <span class="material-icons">add</span>Добавить
+                </button>
+            </form>
+            <ul class="notes">
+                {% for note in notes %}
+                <li>
+                    <span>{{ note }}</span>
+                    <a href="/notes/delete/{{ loop.index0 }}" title="Удалить">
+                        <span class="material-icons">delete</span>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% if weather %}
+        <div class="dashboard-card weather">
+            <div class="weather-title">
+                <span class="material-icons">wb_sunny</span>
+                Текущая погода (Москва)
+            </div>
+            <div class="weather-item">
+                <span class="material-icons" style="color:#1976d2;">thermostat</span>
+                Температура: {{ weather.current_weather.temperature }}°C
+            </div>
+            <div class="weather-item">
+                <span class="material-icons" style="color:#1976d2;">air</span>
+                Ветер: {{ weather.current_weather.windspeed }} км/ч
+            </div>
+            <div class="weather-item">
+                <span class="material-icons" style="color:#1976d2;">explore</span>
+                Направление ветра: {{ weather.current_weather.winddirection }}°
+            </div>
+            <div class="weather-item">
+                <span class="material-icons" style="color:#1976d2;">schedule</span>
+                Время измерения: {{ weather.current_weather.time }}
+            </div>
+            <div class="weather-item">
+                <span class="material-icons" style="color:#1976d2;">cloud</span>
+                Код погоды: {{ weather.current_weather.weathercode }}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    <footer>
+        <p>Погода предоставлена <a href="https://open-meteo.com/en/docs" target="_blank">Open-Meteo API</a></p>
+        <p><a href="http://104.164.54.139/docs" target="_blank">Swagger API</a></p>
+    </footer>
+</body>
+</html>
