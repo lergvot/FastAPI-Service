@@ -8,12 +8,23 @@ import httpx
 import json
 import random
 from fastapi.exceptions import HTTPException
+from fastapi.responses import JSONResponse
 
 app = FastAPI()
 
 BASE_DIR = Path(__file__).resolve().parent
 NOTES_FILE = BASE_DIR / "notes.json"
 QUOTE_FILE = BASE_DIR / "quotes.json"
+
+# Загрузка данных при старте
+def load_json_file(file_path: Path):
+    if file_path.exists():
+        with open(file_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return []
+
+notes = load_json_file(NOTES_FILE)
+quotes = load_json_file(QUOTE_FILE)
 
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
@@ -92,30 +103,48 @@ async def get_weather():
         return {"error": "Не удалось получить данные о погоде"}
     return weather
 
+@app.get("/quotes")
+async def get_quotes():
+    if not QUOTE_FILE.exists():
+        raise HTTPException(status_code=404, detail="Файл с цитатами не найден.")
+    
+    with open(QUOTE_FILE, "r", encoding="utf-8") as f:
+        quotes = json.load(f)
+        if quotes:
+            return quotes
+        else:
+            raise HTTPException(status_code=404, detail="No quotes available.")
+
 @app.get("/quotes/random")
 async def get_random_quote():
-    if QUOTE_FILE.exists():
-        with open(QUOTE_FILE, "r", encoding="utf-8") as f:
-            quotes = json.load(f)
-            if quotes:
-                return random.choice(quotes)
-            raise HTTPException(status_code=404, detail="No quotes available.")
-    raise HTTPException(status_code=404, detail="No quotes available.")
+    if not QUOTE_FILE.exists():
+        raise HTTPException(status_code=404, detail="Файл с цитатами не найден.")
+    
+    with open(QUOTE_FILE, "r", encoding="utf-8") as f:
+        quotes = json.load(f)
+        if quotes:
+            return random.choice(quotes)
+        raise HTTPException(status_code=404, detail="No quotes available.")
+
+@app.get("/quotes/search")
+async def search_quote(author: str = ""):
+    if not QUOTE_FILE.exists():
+        raise HTTPException(status_code=404, detail="Файл с цитатами не найден.")
+
+    with open(QUOTE_FILE, "r", encoding="utf-8") as f:
+        quotes = json.load(f)
+        results = [q for q in quotes if author.lower() in q.get("Author", "").lower()]
+        if results:
+            return results
+        raise HTTPException(status_code=404, detail="Цитаты не найдены.")
 
 @app.get("/quotes/{quote_id}")
 async def get_quote_by_id(quote_id: int):
-    if QUOTE_FILE.exists():
-        with open(QUOTE_FILE, "r", encoding="utf-8") as f:
-            quotes = json.load(f)
-            if 0 <= quote_id < len(quotes):
-                return quotes[quote_id]
-    raise HTTPException(status_code=404, detail="Quote not found.")
+    if not QUOTE_FILE.exists():
+        raise HTTPException(status_code=404, detail="Файл с цитатами не найден.")
 
-@app.get("/quotes/search")
-async def search_quotes(author: str):
-    if QUOTE_FILE.exists():
-        with open(QUOTE_FILE, "r", encoding="utf-8") as f:
-            quotes = json.load(f)
-            result = [q for q in quotes if author.lower() in q.get("Author", "").lower()]
-            return result if result else {"message": "No quotes found for this author."}
-    raise HTTPException(status_code=404, detail="No quotes available.")
+    with open(QUOTE_FILE, "r", encoding="utf-8") as f:
+        quotes = json.load(f)
+        if 0 <= quote_id < len(quotes):
+            return quotes[quote_id]
+        raise HTTPException(status_code=404, detail="Цитата не найдена.")
