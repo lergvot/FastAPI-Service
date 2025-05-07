@@ -62,7 +62,7 @@ async def fetch_weather() -> WeatherResponse | None:
 async def index(request: Request):
     notes = load_notes()
     weather = await fetch_weather()
-    quote = get_random_quote()
+    quote = await get_random_quote()
     return templates.TemplateResponse("index.html", {
         "request": request,
         "notes": notes,
@@ -85,7 +85,7 @@ def delete_note(note_id: int):
         save_notes(notes)
     return RedirectResponse("/", status_code=303)
 
-@app.get("/weather", response_model=WeatherResponse)
+@app.get("/weather")
 async def get_weather():
     weather = await fetch_weather()
     if not weather:
@@ -97,7 +97,9 @@ async def get_random_quote():
     if QUOTE_FILE.exists():
         with open(QUOTE_FILE, "r", encoding="utf-8") as f:
             quotes = json.load(f)
-            return random.choice(quotes)
+            if quotes:
+                return random.choice(quotes)
+            raise HTTPException(status_code=404, detail="No quotes available.")
     raise HTTPException(status_code=404, detail="No quotes available.")
 
 @app.get("/quotes/{quote_id}")
