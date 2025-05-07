@@ -18,7 +18,7 @@ QUOTE_FILE = BASE_DIR / "quotes.json"
 
 # Загрузка данных при старте
 def load_json_file(file_path: Path):
-    if file_path.exists():
+    if (file_path.exists()):
         with open(file_path, "r", encoding="utf-8") as f:
             return json.load(f)
     return []
@@ -57,6 +57,12 @@ class WeatherResponse(BaseModel):
     elevation: float
     current_weather: CurrentWeather
 
+class CatResponse(BaseModel):
+    id: str
+    url: str
+    width: int
+    height: int
+
 async def fetch_weather() -> WeatherResponse | None:
     url = "https://api.open-meteo.com/v1/forecast?latitude=55.75&longitude=37.61&current_weather=true"
     try:
@@ -69,17 +75,40 @@ async def fetch_weather() -> WeatherResponse | None:
         print(f"Ошибка получения погоды: {e}")
         return None
 
+async def get_cat() -> CatResponse | None:
+    url = "https://api.thecatapi.com/v1/images/search"
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url)
+            response.raise_for_status()
+            data = response.json()
+            return CatResponse(**data[0])
+    except Exception as e:
+        print(f"Ошибка получения кота: {e}")
+        return None
+
 @app.get("/")
 async def index(request: Request):
     notes = load_notes()
     weather = await fetch_weather()
     quote = await get_random_quote()
+    cat = await get_cat()
     return templates.TemplateResponse("index.html", {
         "request": request,
         "notes": notes,
         "weather": weather,
-        "quotes": quote
+        "quotes": quote,
+        "cat": cat
     })
+
+@app.get("/cat")
+async def cat():
+    cat_url = await get_cat()
+    if cat_url:
+        cat_url = cat_url.url
+    if not cat_url:
+        return JSONResponse(status_code=404, content={"error": "Не удалось получить изображение кота."})
+    return JSONResponse(content={"url": cat_url})
 
 @app.post("/notes/add")
 def add_note(note: str = Form(...)):
