@@ -62,7 +62,7 @@ async def fetch_weather() -> WeatherResponse | None:
 async def index(request: Request):
     notes = load_notes()
     weather = await fetch_weather()
-    quote = get_random_quote()
+    quote = await get_random_quote()
     return templates.TemplateResponse("index.html", {
         "request": request,
         "notes": notes,
