@@ -14,40 +14,25 @@
 </head>
 
 <body>
-    <div class="quote">
-        <div class="quote-text">
-            <span class="material-icons">format_quote</span>
-            <span>{{ quotes['Quote'] }}</span>
-        </div>
-        <div class="quote-author">
-            <span>{{ quotes['Author'] }}</span>
-        </div>
-    </div>
-    <div class="dashboard-container">
-        <div class="dashboard-card">
-            <h1>Мои заметки</h1>
-            <form method="post" action="/notes/add" class="note-form">
-                <input type="text" name="note" placeholder="Новая заметка" required>
-                <button type="submit">
-                    <span class="material-icons">add</span>Добавить
-                </button>
-            </form>
-            <ul class="notes">
-                {% for note in notes %}
-                <li>
-                    <span>{{ note }}</span>
-                    <a href="/notes/delete/{{ loop.index0 }}" title="Удалить">
-                        <span class="material-icons">delete</span>
-                    </a>
-                </li>
-                {% endfor %}
-            </ul>
+    <div class="header">
+        <div class="quote">
+            <div class="quote-text">
+                <div>
+                    <span class="material-icons">format_quote</span>
+                </div>
+                <div>
+                    <span>{{ quotes['Quote'] }}</span>
+                </div>
+            </div>
+            <div class="quote-author">
+                <span>{{ quotes['Author'] }}</span>
+            </div>
         </div>
         {% if weather %}
-        <div class="dashboard-card weather">
+        <div class="weather">
             <div class="weather-title">
                 <span class="material-icons">wb_sunny</span>
-                Текущая погода (Москва)
+                Погода (Москва)
             </div>
             <div class="weather-item">
                 <span class="material-icons" style="color:#1976d2;">thermostat</span>
@@ -72,9 +57,36 @@
         </div>
         {% endif %}
     </div>
+
+    <div class="dashboard-container">
+        <div class="cat">
+            <img src="{{ cat['url'] }}" alt="Котик" class="cat-image" width=auto height=auto>
+        </div>
+        <div class="dashboard-notes">
+            <h1>Мои заметки</h1>
+            <form method="post" action="/notes/add" class="note-form">
+                <input type="text" name="note" placeholder="Новая заметка" required>
+                <button type="submit">
+                    <span class="material-icons">add</span>Добавить
+                </button>
+            </form>
+            <ul class="notes">
+                {% for note in notes %}
+                <li>
+                    <span>{{ note }}</span>
+                    <a href="/notes/delete/{{ loop.index0 }}" title="Удалить">
+                        <span class="material-icons">delete</span>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
     <footer class="footer">
         <p>Погода: <a href="https://open-meteo.com/en/docs" target="_blank">Open-Meteo API</a></p>
+        <p>Котики: <a href="https://developers.thecatapi.com/" target="_blank">TheCatAPI</a></p>
         <p><a href="/docs" target="_blank">Swagger API</a></p>
+        <p>Для чего всё это: <a href="/templates/info.html" target="_blank">Info</a></p>
     </footer>
 </body>
 </html>
