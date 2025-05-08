@@ -10,6 +10,9 @@ import random
 from datetime import datetime, timedelta, timezone
 import subprocess
 import os
+import hmac
+import hashlib
+from fastapi import Body
 
 app = FastAPI()
 
@@ -17,21 +20,40 @@ BASE_DIR = Path(__file__).resolve().parent
 NOTES_FILE = BASE_DIR / "notes.json"
 QUOTE_FILE = BASE_DIR / "quotes.json"
 
-# Читаем секрет из защищённого файла
-SECRET_FILE = os.getenv("DEPLOY_SECRET_FILE")
-DEPLOY_SECRET = None
-if SECRET_FILE:
-    with open(SECRET_FILE, "r") as file:
-        DEPLOY_SECRET = file.read().strip()
+# Читаем секрет из переменной окружения
+DEPLOY_SECRET = os.getenv("DEPLOY_SECRET")
+if not DEPLOY_SECRET:
+    raise RuntimeError("DEPLOY_SECRET environment variable is not set.")
 
 @app.post("/deploy")
-async def deploy(background_tasks: BackgroundTasks, x_hub_signature: str = Header(None)):
-    """Эндпоинт для деплоя через GitHub Webhook (защищен секретом)."""
-    if not DEPLOY_SECRET or x_hub_signature != DEPLOY_SECRET:
-        raise HTTPException(status_code=403, detail="Unauthorized")
+async def deploy(
+    background_tasks: BackgroundTasks,
+    x_hub_signature_256: str = Header(None, alias="X-Hub-Signature-256"),
+    payload: bytes = Body(...)  # Получаем тело запроса через FastAPI Body
+):
+    """Эндпоинт для деплоя через GitHub Webhook"""
+    # Проверка конфигурации сервера
+    if not DEPLOY_SECRET:
+        raise HTTPException(500, detail="Server misconfigured: missing deploy secret")
 
+    # Проверка наличия подписи
+    if not x_hub_signature_256:
+        raise HTTPException(400, detail="Missing signature")
+
+    # Генерируем ожидаемую подпись
+    expected_signature = "sha256=" + hmac.new(
+        DEPLOY_SECRET.encode(),
+        payload,
+        hashlib.sha256
+    ).hexdigest()
+
+    # Сравнение подписей
+    if not hmac.compare_digest(x_hub_signature_256, expected_signature):
+        raise HTTPException(403, detail="Invalid signature")
+
+    # Запуск деплоя
     background_tasks.add_task(subprocess.run, ["/opt/fastapi-app/deploy.sh"])
-    return {"status": "Deployment started"}
+    return {"status": "Deployment initiated"}
 
 # Загрузка данных при старте
 def load_json_file(file_path: Path):
@@ -163,7 +185,6 @@ async def index(request: Request):
             "windspeed": f"{windspeed_ms} м/с",
             "winddirection": wind_direction_to_text(wd.winddirection),
             "weathercode": weather_code_to_text(wd.weathercode),
-            "is_day": "День" if wd.is_day else "Ночь",
             "time": to_moscow_time(wd.time)
         }
     quote = await get_random_quote()
