@@ -34,6 +34,7 @@ html, body {
     box-shadow: var(--shadow);
     padding: 2rem 1.5rem;
     max-height: 120px;
+    max-width: 960px;
     margin: 2rem auto;
     text-align: right;
     background-color: #f0f4fa;
