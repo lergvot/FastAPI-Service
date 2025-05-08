@@ -1,5 +1,5 @@
-from fastapi import FastAPI, Request, Form
-from fastapi.responses import RedirectResponse
+from fastapi import FastAPI, Request, Form, BackgroundTasks, Header, HTTPException
+from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -7,15 +7,31 @@ from pathlib import Path
 import httpx
 import json
 import random
-from fastapi.exceptions import HTTPException
-from fastapi.responses import JSONResponse
 from datetime import datetime, timedelta, timezone
+import subprocess
+import os
 
 app = FastAPI()
 
 BASE_DIR = Path(__file__).resolve().parent
 NOTES_FILE = BASE_DIR / "notes.json"
 QUOTE_FILE = BASE_DIR / "quotes.json"
+
+# Читаем секрет из защищённого файла
+SECRET_FILE = os.getenv("DEPLOY_SECRET_FILE")
+DEPLOY_SECRET = None
+if SECRET_FILE:
+    with open(SECRET_FILE, "r") as file:
+        DEPLOY_SECRET = file.read().strip()
+
+@app.post("/deploy")
+async def deploy(background_tasks: BackgroundTasks, x_hub_signature: str = Header(None)):
+    """Эндпоинт для деплоя через GitHub Webhook (защищен секретом)."""
+    if not DEPLOY_SECRET or x_hub_signature != DEPLOY_SECRET:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+
+    background_tasks.add_task(subprocess.run, ["/opt/fastapi-app/deploy.sh"])
+    return {"status": "Deployment started"}
 
 # Загрузка данных при старте
 def load_json_file(file_path: Path):
