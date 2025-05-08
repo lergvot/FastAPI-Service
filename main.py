@@ -125,6 +125,11 @@ def delete_note(note_id: int):
         save_notes(notes)
     return RedirectResponse("/", status_code=303)
 
+@app.get("/notes")
+def get_notes():
+    notes = load_notes()
+    return {"notes": notes}
+
 @app.get("/weather")
 async def get_weather():
     weather = await fetch_weather()
@@ -177,3 +182,7 @@ async def get_quote_by_id(quote_id: int):
         if 0 <= quote_id < len(quotes):
             return quotes[quote_id]
         raise HTTPException(status_code=404, detail="Цитата не найдена.")
+        
+@app.get("/templates/info.html")
+async def info(request: Request):
+    return templates.TemplateResponse("info.html", {"request": request})
