@@ -30,11 +30,18 @@
     ```bash
     pip install -r requirements.txt
     ```
+4. Запусти приложение:
+    ```bash
+    uvicorn main:app --reload
+    ```
 
 ## Запуск
-
 ```bash
-uvicorn main:app --reload
+# Для Windows:
+venv\Scripts\python -m uvicorn main:app --reload
+
+# Для Linux/MacOS:
+venv/bin/python -m uvicorn main:app --reload
 ```
 
 ## Использование

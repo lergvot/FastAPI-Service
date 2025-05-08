@@ -9,6 +9,7 @@ import json
 import random
 from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse
+from datetime import datetime, timedelta, timezone
 
 app = FastAPI()
 
@@ -75,6 +76,52 @@ async def fetch_weather() -> WeatherResponse | None:
         print(f"Ошибка получения погоды: {e}")
         return None
 
+def wind_direction_to_text(degrees: float) -> str:
+    directions = [
+        "С", "ССВ", "СВ", "ВСВ", "В", "ВЮВ", "ЮВ", "ЮЮВ",
+        "Ю", "ЮЮЗ", "ЮЗ", "ЗЮЗ", "З", "ЗСЗ", "СЗ", "ССЗ"
+    ]
+    idx = int((degrees + 11.25) % 360 / 22.5)
+    return directions[idx]
+
+def weather_code_to_text(code: int) -> str:
+    codes = {
+        0: "Ясно",
+        1: "Преимущественно ясно",
+        2: "Переменная облачность",
+        3: "Пасмурно",
+        45: "Туман",
+        48: "Иней",
+        51: "Морось слабая",
+        53: "Морось",
+        55: "Морось сильная",
+        56: "Лёгкий ледяной дождь",
+        57: "Ледяной дождь",
+        61: "Дождь слабый",
+        63: "Дождь",
+        65: "Дождь сильный",
+        66: "Лёгкий ледяной дождь",
+        67: "Ледяной дождь",
+        71: "Снег слабый",
+        73: "Снег",
+        75: "Снег сильный",
+        77: "Снежные зерна",
+        80: "Ливень слабый",
+        81: "Ливень",
+        82: "Ливень сильный",
+        85: "Снегопад слабый",
+        86: "Снегопад сильный",
+        95: "Гроза",
+        96: "Гроза с градом",
+        99: "Гроза с сильным градом"
+    }
+    return codes.get(code, f"Неизвестно ({code})")
+
+def to_moscow_time(iso_time: str) -> str:
+    dt = datetime.fromisoformat(iso_time)
+    moscow_dt = dt.replace(tzinfo=timezone.utc) + timedelta(hours=3)
+    return moscow_dt.strftime("%H:%M") #"%d.%m.%Y %H:%M"
+
 async def get_cat() -> CatResponse | None:
     url = "https://api.thecatapi.com/v1/images/search"
     try:
@@ -91,12 +138,24 @@ async def get_cat() -> CatResponse | None:
 async def index(request: Request):
     notes = load_notes()
     weather = await fetch_weather()
+    weather_display = None
+    if weather:
+        wd = weather.current_weather
+        windspeed_ms = round(wd.windspeed * 0.27778, 1)
+        weather_display = {
+            "temperature": f"{wd.temperature} °C",
+            "windspeed": f"{windspeed_ms} м/с",
+            "winddirection": wind_direction_to_text(wd.winddirection),
+            "weathercode": weather_code_to_text(wd.weathercode),
+            "is_day": "День" if wd.is_day else "Ночь",
+            "time": to_moscow_time(wd.time)
+        }
     quote = await get_random_quote()
     cat = await get_cat()
     return templates.TemplateResponse("index.html", {
         "request": request,
         "notes": notes,
-        "weather": weather,
+        "weather": weather_display,
         "quotes": quote,
         "cat": cat
     })

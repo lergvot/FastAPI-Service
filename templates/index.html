@@ -35,24 +35,20 @@
                 Погода (Москва)
             </div>
             <div class="weather-item">
+                <span class="material-icons" style="color:#1976d2;">cloud</span>
+                Сейчас: {{ weather.is_day }}, {{ weather.weathercode }}
+            </div>
+            <div class="weather-item">
                 <span class="material-icons" style="color:#1976d2;">thermostat</span>
-                Температура: {{ weather.current_weather.temperature }}°C
+                Температура: {{ weather.temperature }}°C
             </div>
             <div class="weather-item">
                 <span class="material-icons" style="color:#1976d2;">air</span>
-                Ветер: {{ weather.current_weather.windspeed }} км/ч
-            </div>
-            <div class="weather-item">
-                <span class="material-icons" style="color:#1976d2;">explore</span>
-                Направление ветра: {{ weather.current_weather.winddirection }}°
+                Ветер: {{ weather.windspeed }} ({{ weather.winddirection }})
             </div>
             <div class="weather-item">
                 <span class="material-icons" style="color:#1976d2;">schedule</span>
-                Время измерения: {{ weather.current_weather.time }}
-            </div>
-            <div class="weather-item">
-                <span class="material-icons" style="color:#1976d2;">cloud</span>
-                Код погоды: {{ weather.current_weather.weathercode }}
+                Время измерения: {{ weather.time }}
             </div>
         </div>
         {% endif %}
