@@ -81,6 +81,29 @@ def save_notes(notes):
     with open(NOTES_FILE, "w", encoding="utf-8") as f:
         json.dump(notes, f, ensure_ascii=False, indent=2)
 
+def get_git_version():
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=BASE_DIR
+        ).decode("utf-8").strip()
+    except Exception:
+        return "unknown"
+
+def get_version():
+    version_file = BASE_DIR / "version.txt"
+    if version_file.exists():
+        with open(version_file, "r", encoding="utf-8") as f:
+            version = f.read().strip()
+    else:
+        version = "0.0.0"
+    env = os.getenv("ENV", "prod")
+    git_hash = get_git_version()
+    if env == "prod":
+        return f"v{version} ({git_hash})"
+    else:
+        return f"v{version} ({env} {git_hash})"
+
 class CurrentWeather(BaseModel):
     temperature: float
     windspeed: float
@@ -192,12 +215,14 @@ async def index(request: Request):
         }
     quote = await get_random_quote()
     cat = await get_cat()
+    version = get_version()
     return templates.TemplateResponse("index.html", {
         "request": request,
         "notes": notes,
         "weather": weather_display,
         "quotes": quote,
-        "cat": cat
+        "cat": cat,
+        "version": version
     })
 
 @app.get("/cat")
