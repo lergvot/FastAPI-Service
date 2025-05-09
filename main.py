@@ -95,6 +95,24 @@ async def deploy(
         if not hmac.compare_digest(x_hub_signature_256, expected_signature):
             raise HTTPException(403, detail="Invalid signature")
 
+    # Проверка: разрешать деплой только на prod и только с ветки main
+    if ENV == "dev":
+        raise HTTPException(403, detail="Deploy is disabled on dev environment")
+
+    # Проверка ветки (например, из payload)
+    import json
+    body = json.loads(payload)
+    ref = body.get("ref", "")
+    if ref != "refs/heads/main":
+        raise HTTPException(403, detail="Deploy allowed only from main branch")
+
+    # Сбросить visits.txt
+    try:
+        with open(VISITS_FILE, "w") as f:
+            f.write("0")
+    except Exception as e:
+        print(f"Ошибка сброса visits.txt: {e}")
+        
     # Запуск деплоя (можно отключить на dev, если нужно)
     background_tasks.add_task(subprocess.run, ["/opt/fastapi-app/deploy.sh"])
     return {"status": "Deployment initiated"}
