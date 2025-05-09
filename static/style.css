@@ -159,7 +159,7 @@ ul.notes li {
     box-shadow: 0 1px 2px rgba(25, 118, 210, 0.03);
     font-size: 1.05rem;
 }
-ul.notes li a {
+ul.notes li button {
     color: #e53935;
     text-decoration: none;
     font-size: 1.2rem;
@@ -170,6 +170,34 @@ ul.notes li a {
 ul.notes li a:hover {
     color: #b71c1c;
 }
+
+.tooltip-visible {
+    position: absolute;
+    background: #e53935; /* Material Red 600 */
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(229, 57, 53, 0.18), 0 1.5px 4px rgba(25, 118, 210, 0.10);
+    font-size: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    animation: fadein 0.3s;
+    border: 1px solid #ffcdd2; /* Light red border for accent */
+}
+.tooltip-visible .material-icons {
+    font-size: 1.2em;
+    margin-right: 0.3em;
+}
+@keyframes fadein {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
 .weather-title {
     font-size: 1.15rem;
     font-weight: 500;
