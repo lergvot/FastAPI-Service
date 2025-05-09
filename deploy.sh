@@ -1,6 +1,4 @@
 #!/bin/bash
-set -e  # Прерывать выполнение при любой ошибке
-
 cd /opt/fastapi-app
 
 git reset --hard HEAD
