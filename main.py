@@ -341,6 +341,6 @@ async def get_quote_by_id(quote_id: int):
             return quotes[quote_id]
         raise HTTPException(status_code=404, detail="Цитата не найдена.")
         
-@app.get("/templates/info.html")
+@app.get("/info.html")
 async def info(request: Request):
     return templates.TemplateResponse("info.html", {"request": request})
