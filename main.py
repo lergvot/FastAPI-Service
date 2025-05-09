@@ -76,44 +76,34 @@ async def deploy(
     x_hub_signature_256: str = Header(None, alias="X-Hub-Signature-256"),
     payload: bytes = Body(...)  # Получаем тело запроса через FastAPI Body
 ):
-    """Эндпоинт для деплоя через GitHub Webhook"""
-    # Проверка конфигурации сервера
-    if ENV != "dev" and not DEPLOY_SECRET:
+    """Деплой через GitHub Webhook (только с ветки main)"""
+    if not DEPLOY_SECRET:
         raise HTTPException(500, detail="Server misconfigured: missing deploy secret")
-
-    # Проверка наличия подписи
-    if ENV != "dev" and not x_hub_signature_256:
+    if not x_hub_signature_256:
         raise HTTPException(400, detail="Missing signature")
 
-    # Генерируем ожидаемую подпись и сравниваем только если не dev
-    if ENV != "dev":
-        expected_signature = "sha256=" + hmac.new(
-            DEPLOY_SECRET.encode(),
-            payload,
-            hashlib.sha256
-        ).hexdigest()
-        if not hmac.compare_digest(x_hub_signature_256, expected_signature):
-            raise HTTPException(403, detail="Invalid signature")
+    expected_signature = "sha256=" + hmac.new(
+        DEPLOY_SECRET.encode(),
+        payload,
+        hashlib.sha256
+    ).hexdigest()
+    if not hmac.compare_digest(x_hub_signature_256, expected_signature):
+        raise HTTPException(403, detail="Invalid signature")
 
-    # Проверка: разрешать деплой только на prod и только с ветки main
-    if ENV == "dev":
-        raise HTTPException(403, detail="Deploy is disabled on dev environment")
-
-    # Проверка ветки (например, из payload)
-    import json
-    body = json.loads(payload)
+    try:
+        body = json.loads(payload.decode("utf-8"))
+    except Exception as e:
+        raise HTTPException(400, detail=f"Invalid JSON payload: {e}")
     ref = body.get("ref", "")
     if ref != "refs/heads/main":
         raise HTTPException(403, detail="Deploy allowed only from main branch")
 
-    # Сбросить visits.txt
     try:
         with open(VISITS_FILE, "w") as f:
             f.write("0")
     except Exception as e:
         print(f"Ошибка сброса visits.txt: {e}")
-        
-    # Запуск деплоя (можно отключить на dev, если нужно)
+
     background_tasks.add_task(subprocess.run, ["/opt/fastapi-app/deploy.sh"])
     return {"status": "Deployment initiated"}
 
