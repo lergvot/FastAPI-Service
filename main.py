@@ -74,7 +74,7 @@ if ENV != "dev" and not DEPLOY_SECRET:
 async def deploy(
     background_tasks: BackgroundTasks,
     x_hub_signature_256: str = Header(None, alias="X-Hub-Signature-256"),
-    payload: dict = Body(...)  # Получаем тело запроса как JSON
+    request_body: bytes = Body(...)  # Получаем сырое тело запроса как байты
 ):
     """Деплой через GitHub Webhook (только с ветки main)"""
 
@@ -86,27 +86,33 @@ async def deploy(
         if not x_hub_signature_256:
             raise HTTPException(400, detail="Missing signature")
 
+        # Проверка подписи HMAC (SHA-256)
         expected_signature = "sha256=" + hmac.new(
             DEPLOY_SECRET.encode(),
-            json.dumps(payload).encode("utf-8"),
+            request_body,  # Подпись считается по исходному телу запроса (байты)
             hashlib.sha256
         ).hexdigest()
 
         if not hmac.compare_digest(x_hub_signature_256, expected_signature):
             raise HTTPException(403, detail="Invalid signature")
 
+    # Загружаем тело как JSON
+    try:
+        payload = json.loads(request_body.decode("utf-8"))
+    except json.JSONDecodeError:
+        raise HTTPException(400, detail="Invalid JSON payload")
+
     # Проверка ветки (деплой только из main)
     ref = payload.get("ref", "")
     if ref != "refs/heads/main":
         raise HTTPException(403, detail="Deploy allowed only from main branch")
-
     # Сбрасываем visits.txt (если нужно)
     try:
         with open("visits.txt", "w") as f:
             f.write("0")
     except Exception:
         pass  # Если сброс не обязателен, просто пропускаем
-
+    
     # Запуск деплоя
     background_tasks.add_task(subprocess.run, ["/opt/fastapi-app/deploy.sh"])
     return {"status": "Deployment initiated"}
