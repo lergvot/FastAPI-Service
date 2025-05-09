@@ -74,7 +74,7 @@ if ENV != "dev" and not DEPLOY_SECRET:
 async def deploy(
     background_tasks: BackgroundTasks,
     x_hub_signature_256: str = Header(None, alias="X-Hub-Signature-256"),
-    payload: bytes = Body(..., media_type="*/*")  # <-- принимает любой тип
+    payload: bytes = Body(...)
 ):
     """Эндпоинт для деплоя через GitHub Webhook"""
     # Проверка конфигурации сервера
