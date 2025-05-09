@@ -9,4 +9,5 @@ source venv/bin/activate
 pip install -r requirements.txt --no-cache-dir
 sudo systemctl restart fastapi.service
 
+chmod +x /opt/fastapi-app/deploy.sh
 echo "Deployment completed"
