@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, Form, BackgroundTasks, Header, HTTPException
+from fastapi import FastAPI, Request, Form, BackgroundTasks, Header, HTTPException, status
 from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -14,6 +14,7 @@ import hmac
 import hashlib
 from fastapi import Body
 from dotenv import load_dotenv
+from urllib.parse import urlencode
 
 load_dotenv()
 app = FastAPI()
@@ -21,6 +22,46 @@ app = FastAPI()
 BASE_DIR = Path(__file__).resolve().parent
 NOTES_FILE = BASE_DIR / "notes.json"
 QUOTE_FILE = BASE_DIR / "quotes.json"
+VISITS_FILE = BASE_DIR / "visits.txt"
+MAX_NOTES = 10
+MAX_NOTE_LENGTH = 250
+
+# Считаем посещения
+def get_visits():
+    if VISITS_FILE.exists():
+        with open(VISITS_FILE, "r") as f:
+            return int(f.read())
+    return 0
+
+def increment_visits():
+    visits = get_visits() + 1
+    with open(VISITS_FILE, "w") as f:
+        f.write(str(visits))
+    return visits
+
+# Получаем версию приложения
+def get_git_version():
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=BASE_DIR
+        ).decode("utf-8").strip()
+    except Exception:
+        return "unknown"
+
+def get_version():
+    version_file = BASE_DIR / "version.txt"
+    if version_file.exists():
+        with open(version_file, "r", encoding="utf-8") as f:
+            version = f.read().strip()
+    else:
+        version = "0.0.0"
+    env = os.getenv("ENV", "prod")
+    git_hash = get_git_version()
+    if env == "prod":
+        return f"v{version}"
+    else:
+        return f"v{version} ({env} {git_hash})"
 
 # Читаем секрет из переменной окружения
 ENV = os.getenv("ENV", "prod")  # По умолчанию prod
@@ -73,36 +114,19 @@ app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="stat
 
 def load_notes():
     if NOTES_FILE.exists():
-        with open(NOTES_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
+        try:
+            with open(NOTES_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return []
     return []
 
 def save_notes(notes):
-    with open(NOTES_FILE, "w", encoding="utf-8") as f:
-        json.dump(notes, f, ensure_ascii=False, indent=2)
-
-def get_git_version():
     try:
-        return subprocess.check_output(
-            ["git", "rev-parse", "--short", "HEAD"],
-            cwd=BASE_DIR
-        ).decode("utf-8").strip()
+        with open(NOTES_FILE, "w", encoding="utf-8") as f:
+            json.dump(notes, f, ensure_ascii=False, indent=2)
     except Exception:
-        return "unknown"
-
-def get_version():
-    version_file = BASE_DIR / "version.txt"
-    if version_file.exists():
-        with open(version_file, "r", encoding="utf-8") as f:
-            version = f.read().strip()
-    else:
-        version = "0.0.0"
-    env = os.getenv("ENV", "prod")
-    git_hash = get_git_version()
-    if env == "prod":
-        return f"v{version} ({git_hash})"
-    else:
-        return f"v{version} ({env} {git_hash})"
+        pass
 
 class CurrentWeather(BaseModel):
     temperature: float
@@ -203,6 +227,8 @@ async def index(request: Request):
     notes = load_notes()
     weather = await fetch_weather()
     weather_display = None
+    visits = increment_visits()
+    error = request.query_params.get("error")
     if weather:
         wd = weather.current_weather
         windspeed_ms = round(wd.windspeed * 0.27778, 1)
@@ -222,7 +248,9 @@ async def index(request: Request):
         "weather": weather_display,
         "quotes": quote,
         "cat": cat,
-        "version": version
+        "version": version,
+        "visits": visits,
+        "error": error
     })
 
 @app.get("/cat")
@@ -237,17 +265,23 @@ async def cat():
 @app.post("/notes/add")
 def add_note(note: str = Form(...)):
     notes = load_notes()
+    if len(notes) >= MAX_NOTES:
+        params = urlencode({"error": "Превышено максимальное количество заметок"})
+        return RedirectResponse(f"/?{params}", status_code=status.HTTP_303_SEE_OTHER)
+    if len(note) > MAX_NOTE_LENGTH:
+        params = urlencode({"error": "Заметка слишком длинная"})
+        return RedirectResponse(f"/?{params}", status_code=status.HTTP_303_SEE_OTHER)
     notes.append(note)
     save_notes(notes)
-    return RedirectResponse("/", status_code=303)
+    return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
 
-@app.get("/notes/delete/{note_id}")
+@app.post("/notes/delete/{note_id}")
 def delete_note(note_id: int):
     notes = load_notes()
     if 0 <= note_id < len(notes):
         notes.pop(note_id)
         save_notes(notes)
-    return RedirectResponse("/", status_code=303)
+    return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
 
 @app.get("/notes")
 def get_notes():

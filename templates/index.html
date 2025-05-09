@@ -11,6 +11,28 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <!-- Roboto Font -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <script>
+        window.addEventListener('DOMContentLoaded', function() {
+        const tooltip = document.getElementById('note-error-tooltip');
+        const btn = document.getElementById('add-note-btn');
+        if (tooltip && btn) {
+            // Позиционируем тултип над кнопкой
+            const btnRect = btn.getBoundingClientRect();
+            tooltip.style.top = (btnRect.bottom + window.scrollY + 8) + 'px';
+            tooltip.style.left = (btnRect.left + btnRect.width/2 + window.scrollX) + 'px';
+            tooltip.style.transform = 'translateX(-50%)';
+
+            // Скрываем тултип через 3 секунды
+            setTimeout(() => {
+                tooltip.style.display = 'none';
+                // Удаляем error из URL, чтобы не показывать снова при обновлении
+                const url = new URL(window.location);
+                url.searchParams.delete('error');
+                window.history.replaceState({}, document.title, url.pathname + url.search);
+            }, 3000);
+        }
+    });
+    </script>
 </head>
 
 <body>
@@ -62,17 +84,25 @@
             <h1>Мои заметки</h1>
             <form method="post" action="/notes/add" class="note-form">
                 <input type="text" name="note" placeholder="Новая заметка" required>
-                <button type="submit">
+                <button id="add-note-btn" type="submit">
                     <span class="material-icons">add</span>Добавить
                 </button>
             </form>
+            {% if error %}
+                <div id="note-error-tooltip" class="tooltip-visible">
+                    <span class="material-icons">error_outline</span>
+                    {{ error }}
+                </div>
+            {% endif %}
             <ul class="notes">
                 {% for note in notes %}
                 <li>
                     <span>{{ note }}</span>
-                    <a href="/notes/delete/{{ loop.index0 }}" title="Удалить">
-                        <span class="material-icons">delete</span>
-                    </a>
+                    <form action="/notes/delete/{{ loop.index0 }}" method="post" style="display:inline;">
+                        <button type="submit" title="Удалить" style="background:none; border:none; padding:0; cursor:pointer;">
+                            <span class="material-icons">delete</span>
+                        </button>
+                    </form>
                 </li>
                 {% endfor %}
             </ul>
@@ -83,7 +113,8 @@
         <p>Котики: <a href="https://developers.thecatapi.com/" target="_blank">TheCatAPI</a></p>
         <p>API: <a href="/docs" target="_blank">Swagger API</a></p>
         <p>Для чего всё это: <a href="/templates/info.html" target="_self">Info</a></p>
-        <p>Версия приложения: {{ version }}</a></p>
+        <p>Версия приложения: {{ version }}</p>
+        <p>Посещений: {{ visits }}</p>
     </footer>
 </body>
 </html>
