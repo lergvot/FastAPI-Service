@@ -71,23 +71,6 @@ html, body {
     gap: 2rem;
     justify-content: center;
 }
-.cat {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 0 auto;
-    max-width: 50%;
-    padding: 1.5rem 1.5rem 1.5rem 1.5rem;
-}
-.cat-image {
-    display: block;
-    max-width: 50%;
-    max-height: 100%;
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow);
-    background: var(--surface);
-    object-fit: contain;
-}
 .dashboard-notes {
     background: var(--surface);
     border-radius: var(--border-radius);
@@ -95,8 +78,26 @@ html, body {
     padding: 2rem 1.5rem 1.5rem 1.5rem;
     display: flex;
     flex-direction: column;
-    max-width: 50%;
+    max-width: 45%;
     flex: auto;
+}
+.cat {
+    background: var(--surface);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    max-width: 45%;
+    padding: 2rem 1.5rem 1.5rem 1.5rem;
+}
+.cat-image {
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    background: var(--surface);
+    display: flex;
+    max-width: 100%;
+    max-height: 100%;
 }
 
 h1 {
@@ -194,11 +195,14 @@ ul.notes li a:hover {
     border-radius: var(--border-radius);
     box-shadow: var(--shadow);
     margin: 2rem auto 0 auto;
-    text-align: center;
-    font-size: 0.95rem;
+    padding: 0.5rem 3rem 0.5rem 3rem;
+    max-width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+    font-size: 0.85rem;
     color: #555;
-    left: 0; 
-    bottom: 0; 
-    width: 100%; 
-    padding: 10px 0;
+    min-height: 56px;
 }
+
