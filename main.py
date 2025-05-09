@@ -65,8 +65,8 @@ def get_version():
 
 # Читаем секрет из переменной окружения
 ENV = os.getenv("ENV", "prod")  # По умолчанию prod
-
 DEPLOY_SECRET = os.getenv("DEPLOY_SECRET")
+
 if ENV != "dev" and not DEPLOY_SECRET:
     raise RuntimeError("DEPLOY_SECRET environment variable is not set.")
 
@@ -74,36 +74,40 @@ if ENV != "dev" and not DEPLOY_SECRET:
 async def deploy(
     background_tasks: BackgroundTasks,
     x_hub_signature_256: str = Header(None, alias="X-Hub-Signature-256"),
-    payload: bytes = Body(...)  # Получаем тело запроса через FastAPI Body
+    payload: dict = Body(...)  # Получаем тело запроса как JSON
 ):
     """Деплой через GitHub Webhook (только с ветки main)"""
-    if not DEPLOY_SECRET:
-        raise HTTPException(500, detail="Server misconfigured: missing deploy secret")
-    if not x_hub_signature_256:
-        raise HTTPException(400, detail="Missing signature")
 
-    expected_signature = "sha256=" + hmac.new(
-        DEPLOY_SECRET.encode(),
-        payload,
-        hashlib.sha256
-    ).hexdigest()
-    if not hmac.compare_digest(x_hub_signature_256, expected_signature):
-        raise HTTPException(403, detail="Invalid signature")
+    # Проверка секрета и подписи (в режиме prod)
+    if ENV != "dev":
+        if not DEPLOY_SECRET:
+            raise HTTPException(500, detail="Server misconfigured: missing deploy secret")
 
-    try:
-        body = json.loads(payload.decode("utf-8"))
-    except Exception as e:
-        raise HTTPException(400, detail=f"Invalid JSON payload: {e}")
-    ref = body.get("ref", "")
+        if not x_hub_signature_256:
+            raise HTTPException(400, detail="Missing signature")
+
+        expected_signature = "sha256=" + hmac.new(
+            DEPLOY_SECRET.encode(),
+            json.dumps(payload).encode("utf-8"),
+            hashlib.sha256
+        ).hexdigest()
+
+        if not hmac.compare_digest(x_hub_signature_256, expected_signature):
+            raise HTTPException(403, detail="Invalid signature")
+
+    # Проверка ветки (деплой только из main)
+    ref = payload.get("ref", "")
     if ref != "refs/heads/main":
         raise HTTPException(403, detail="Deploy allowed only from main branch")
 
+    # Сбрасываем visits.txt (если нужно)
     try:
-        with open(VISITS_FILE, "w") as f:
+        with open("visits.txt", "w") as f:
             f.write("0")
-    except Exception as e:
-        print(f"Ошибка сброса visits.txt: {e}")
+    except Exception:
+        pass  # Если сброс не обязателен, просто пропускаем
 
+    # Запуск деплоя
     background_tasks.add_task(subprocess.run, ["/opt/fastapi-app/deploy.sh"])
     return {"status": "Deployment initiated"}
 
