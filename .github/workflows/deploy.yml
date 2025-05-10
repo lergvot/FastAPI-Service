@@ -26,7 +26,6 @@ jobs:
         uses: appleboy/ssh-action@master
         with:
           host: 104.164.54.139
-          port: 33
           username: root
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
