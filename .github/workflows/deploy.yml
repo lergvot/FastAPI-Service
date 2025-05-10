@@ -1,0 +1,40 @@
+name: Deploy FastAPI
+
+on:
+  push:
+    branches:
+      - main  # Деплой при пуше в main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12.3'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Deploy to server
+        uses: appleboy/ssh-action@master
+        with:
+          host: 104.164.54.139
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /opt/fastapi-app
+            git reset --hard HEAD
+            git clean -fd
+            git pull origin main --force
+            source venv/bin/activate
+            pip install -r requirements.txt --no-cache-dir
+            echo "0" > visits.txt  # Сбрасываем счётчик посещений
+            sudo systemctl restart fastapi.service
+            echo "Deployment completed"

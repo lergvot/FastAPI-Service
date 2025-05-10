@@ -63,42 +63,6 @@ def get_version():
     else:
         return f"v{version} ({env} {git_hash})"
 
-# Читаем секрет из переменной окружения
-ENV = os.getenv("ENV", "prod")  # По умолчанию prod
-DEPLOY_SECRET = os.getenv("DEPLOY_SECRET")
-
-if ENV != "dev" and not DEPLOY_SECRET:
-    raise RuntimeError("DEPLOY_SECRET environment variable is not set.")
-
-@app.post("/deploy")
-async def deploy(
-    background_tasks: BackgroundTasks,
-    x_hub_signature_256: str = Header(None, alias="X-Hub-Signature-256"),
-    payload: bytes = Body(...)
-):
-    """Эндпоинт для деплоя через GitHub Webhook"""
-    # Проверка конфигурации сервера
-    if ENV != "dev" and not DEPLOY_SECRET:
-        raise HTTPException(500, detail="Server misconfigured: missing deploy secret")
-
-    # Проверка наличия подписи
-    if ENV != "dev" and not x_hub_signature_256:
-        raise HTTPException(400, detail="Missing signature")
-
-    # Генерируем ожидаемую подпись и сравниваем только если не dev
-    if ENV != "dev":
-        expected_signature = "sha256=" + hmac.new(
-            DEPLOY_SECRET.encode(),
-            payload,
-            hashlib.sha256
-        ).hexdigest()
-        if not hmac.compare_digest(x_hub_signature_256, expected_signature):
-            raise HTTPException(403, detail="Invalid signature")
-
-    # Запуск деплоя (можно отключить на dev, если нужно)
-    background_tasks.add_task(subprocess.run, ["/opt/fastapi-app/deploy.sh"])
-    return {"status": "Deployment initiated"}
-
 # Загрузка данных при старте
 def load_json_file(file_path: Path):
     if (file_path.exists()):
