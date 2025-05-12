@@ -147,3 +147,4 @@ async def get_weather():
         raise he
     except Exception:
         raise HTTPException(status_code=500, detail="Внутренняя ошибка")
+    
