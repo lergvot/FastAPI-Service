@@ -10,8 +10,6 @@ import random
 from datetime import datetime, timedelta, timezone
 import subprocess
 import os
-import hmac
-import hashlib
 from fastapi import Body
 from dotenv import load_dotenv
 from urllib.parse import urlencode
