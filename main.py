@@ -1,23 +1,24 @@
 # Python 3.10
 from fastapi import FastAPI, Request, Form, HTTPException, status
-from fastapi.responses import RedirectResponse, JSONResponse
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel
+from dotenv import load_dotenv
+from urllib.parse import urlencode
 from pathlib import Path
 import httpx
 import json
 import random
-from dotenv import load_dotenv
-from urllib.parse import urlencode
-from app.weather import router as weather_router
-from service import get_version, increment_visits
 from variables import *
+from service import get_version, increment_visits
+from app.weather import router as weather_router
+from app.cat import router as cat_router
 
 load_dotenv()
 app = FastAPI()
 
 app.include_router(weather_router, prefix="/api")
+app.include_router(cat_router, prefix="/api")
 
 # Загрузка данных при старте
 def load_json_file(file_path: Path) -> list:
@@ -48,26 +49,6 @@ def save_notes(notes: list) -> None:
     except Exception:
         pass
 
-class CatResponse(BaseModel):
-    id: str
-    url: str
-    width: int
-    height: int
-
-
-async def get_cat() -> CatResponse | None:
-    """Получает изображение кота"""
-    url = "https://api.thecatapi.com/v1/images/search"
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(url)
-            response.raise_for_status()
-            data = response.json()
-            return CatResponse(**data[0])
-    except Exception as e:
-        print(f"Ошибка получения кота: {e}")
-        return None
-
 @app.get("/")
 async def index(request: Request):
     """Главная страница"""
@@ -76,11 +57,13 @@ async def index(request: Request):
     async with httpx.AsyncClient() as client:
         weather_response = await client.get("http://localhost:8000/api/weather")
         weather_display = weather_response.json()["current_weather"]
-    # weather_display = weather_router
+    # Получаем кота с эндпоинта /api/cat
+    async with httpx.AsyncClient() as client:
+        cat_response = await client.get("http://localhost:8000/api/cat")
+        cat = cat_response.json()
     visits = increment_visits()
     error = request.query_params.get("error")
     quote = await get_random_quote()
-    cat = await get_cat()
     version = get_version()
     return templates.TemplateResponse("index.html", {
         "request": request,
@@ -92,16 +75,6 @@ async def index(request: Request):
         "visits": visits,
         "error": error
     })
-
-@app.get("/cat")
-async def cat():
-    """API для получения изображения кота"""
-    cat_url = await get_cat()
-    if cat_url:
-        cat_url = cat_url.url
-    if not cat_url:
-        return JSONResponse(status_code=404, content={"error": "Не удалось получить изображение кота."})
-    return JSONResponse(content={"url": cat_url})
 
 @app.post("/notes/add")
 def add_note(note: str = Form(...)):

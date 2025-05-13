@@ -1,9 +1,8 @@
 from fastapi import APIRouter, HTTPException
-import httpx
 from pydantic import BaseModel
 from datetime import datetime, timedelta, timezone
-import time
 from variables import *
+import httpx
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -105,7 +104,7 @@ async def fetch_weather() -> WeatherResponse:
     url = f"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current_weather=true"
     
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=5.0) as client:
             response = await client.get(url)
             response.raise_for_status()
             data = response.json()
@@ -151,4 +150,3 @@ async def get_weather():
         raise he
     except Exception:
         raise HTTPException(status_code=500, detail="Внутренняя ошибка")
-    

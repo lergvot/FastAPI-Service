@@ -12,3 +12,6 @@ MAX_NOTE_LENGTH = 250
 # Координаты Москвы
 latitude = 55.75
 longitude = 37.62
+
+# Заглушка кота
+CAT_FALLBACK = "/static/cat_fallback.gif"

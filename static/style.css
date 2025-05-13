@@ -22,7 +22,7 @@ html, body {
     border-radius: var(--border-radius);
     box-shadow: var(--shadow);
     padding: 1.25rem 1.25rem 1.25rem 1.25rem;
-    margin: 2rem auto 1.5rem auto;
+    margin: 0 auto 2rem auto;
     min-height: 64px;
     width: 100%;
     box-sizing: border-box;
