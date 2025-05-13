@@ -8,23 +8,14 @@ from pathlib import Path
 import httpx
 import json
 import random
-from fastapi import Body
 from dotenv import load_dotenv
 from urllib.parse import urlencode
 from app.weather import router as weather_router
 from service import get_version, increment_visits
+from variables import *
 
 load_dotenv()
 app = FastAPI()
-
-BASE_DIR = Path(__file__).resolve().parent
-NOTES_FILE = BASE_DIR / "notes.json"
-QUOTE_FILE = BASE_DIR / "quotes.json"
-
-STATIC_DIR = BASE_DIR / "static"
-TEMPLATES_DIR = BASE_DIR / "templates"
-MAX_NOTES = 10
-MAX_NOTE_LENGTH = 250
 
 app.include_router(weather_router, prefix="/api")
 

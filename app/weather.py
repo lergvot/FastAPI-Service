@@ -3,7 +3,10 @@ import httpx
 from pydantic import BaseModel
 from datetime import datetime, timedelta, timezone
 import time
+from variables import *
+import logging
 
+logging.basicConfig(level=logging.INFO)
 router = APIRouter()
 
 class CurrentWeather(BaseModel):
@@ -27,10 +30,10 @@ class WeatherResponse(BaseModel):
 weather_cache = None
 next_update_time = None
 
-def calculate_next_update(api_time_str: str) -> float:
+def calculate_next_update(api_time_str: str) -> datetime:
     api_time = datetime.fromisoformat(api_time_str.replace("Z", "+00:00"))
     next_update = api_time + timedelta(minutes=15)
-    return next_update.timestamp()
+    return next_update.replace(tzinfo=timezone.utc)
 
 def wind_direction_to_text(degrees: float) -> str:
     directions = [
@@ -95,10 +98,11 @@ def to_moscow_time(iso_time: str) -> str:
 async def fetch_weather() -> WeatherResponse:
     global weather_cache, next_update_time
     
-    if next_update_time and time.time() < next_update_time and weather_cache:
+    if next_update_time and datetime.now(timezone.utc) < next_update_time and weather_cache:
+        logging.info("✅ Возвращаем кэшированные данные")
         return weather_cache
-    
-    url = "https://api.open-meteo.com/v1/forecast?latitude=55.75&longitude=37.62&current_weather=true"
+
+    url = f"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current_weather=true"
     
     try:
         async with httpx.AsyncClient() as client:
