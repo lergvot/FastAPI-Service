@@ -64,10 +64,10 @@ venv/bin/python -m uvicorn main:app --reload
 │   │   ├── quotes.py
 │   │   ├── weather.py
 │   │   ├── _init_.py
+│   ├── data/
+│   │   ├── notes.json
+│   │   ├── quotes.json
 │   ├── main.py
-│   ├── notes.json
-│   ├── quotes.json
-│   ├── quotes_old.json
 │   ├── Readme.md
 │   ├── requirements.txt
 │   ├── service.py

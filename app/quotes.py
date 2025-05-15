@@ -1,7 +1,7 @@
-from fastapi import APIRouter, HTTPException
 import json
 import random
 import logging
+from fastapi import APIRouter, HTTPException
 from variables import *
 from service import *
 

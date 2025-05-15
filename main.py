@@ -1,8 +1,8 @@
+import httpx
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from dotenv import load_dotenv
-import httpx
 from variables import *
 from service import *
 from app.weather import router as weather_router
@@ -24,26 +24,28 @@ app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="stat
 @app.get("/")
 async def index(request: Request):
     """Главная страница"""
-    
+
     # Получаем погоду с эндпоинта /api/weather
     async with httpx.AsyncClient() as client:
-        weather_response = await client.get("http://localhost:8000/api/weather")
-        weather_display = weather_response.json()["current_weather"]
+        weather_response = await client.get(f"{BASE_URL}/api/weather") # BASE_URL = "http://localhost:8000"
+        weather_response.raise_for_status()
+        weather_data = weather_response.json()
     
     # Получаем кота с эндпоинта /api/cat
     async with httpx.AsyncClient() as client:
-        cat_response = await client.get("http://localhost:8000/api/cat")
+        cat_response = await client.get(f"{BASE_URL}/api/cat")
         cat = cat_response.json()
 
     # Получаем цитату с эндпоинта /api/quotes/random
     async with httpx.AsyncClient() as client:
-        quotes_response = await client.get("http://localhost:8000/api/quotes/random")
+        quotes_response = await client.get(f"{BASE_URL}/api/quotes/random")
         quote = quotes_response.json()
 
     # Получаем заметки с эндпоинта /api/notes
     async with httpx.AsyncClient() as client:
-        notes_response = await client.get("http://localhost:8000/api/notes")
-        notes = notes_response.json()
+        notes_response = await client.get(f"{BASE_URL}/api/notes")
+        notes_data = notes_response.json()
+        notes = notes_data["notes"]
 
     visits = increment_visits()
     version = get_version()
@@ -51,7 +53,7 @@ async def index(request: Request):
     return templates.TemplateResponse("index.html", {
         "request": request,
         "notes": notes,
-        "weather": weather_display,
+        "weather": weather_data['current_weather'],
         "quotes": quote,
         "cat": cat,
         "version": version,

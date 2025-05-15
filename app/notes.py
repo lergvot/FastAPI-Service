@@ -1,15 +1,10 @@
-import json
-import random 
-from variables import *
-from service import *
-from fastapi import FastAPI, Form, status
+import logging
+from fastapi import Form, status
 from fastapi.responses import RedirectResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from urllib.parse import urlencode
 from fastapi import APIRouter
-from pathlib import Path
-import logging
+from variables import *
+from service import *
 
 logging.basicConfig(level=logging.INFO)
 router = APIRouter()
@@ -18,6 +13,10 @@ router = APIRouter()
 def add_note(note: str = Form(...)):
     """Добавление заметки"""
     notes = load_notes()
+
+    if not note.strip():
+        params = urlencode({"error": "Заметка не может быть пустой"})
+        return RedirectResponse(f"/?{params}", status_code=status.HTTP_303_SEE_OTHER)
     if len(notes) >= MAX_NOTES:
         params = urlencode({"error": "Превышено максимальное количество заметок"})
         return RedirectResponse(f"/?{params}", status_code=status.HTTP_303_SEE_OTHER)

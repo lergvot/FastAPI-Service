@@ -1,5 +1,6 @@
 
 from fastapi import APIRouter
+from fastapi_cache.decorator import cache
 from pydantic import BaseModel
 from variables import *
 import httpx
@@ -15,9 +16,9 @@ class CatResponse(BaseModel):
 
 async def get_cat() -> CatResponse | None:
     """Получаем изображение кота"""
-    url = "https://api.thecatapi.com/v1/images/search1"
+    url = "https://api.thecatapi.com/v1/images/search"
     try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
+        async with httpx.AsyncClient(timeout=3.0) as client:
             response = await client.get(url)
             response.raise_for_status()
             data = response.json()
@@ -36,7 +37,11 @@ async def get_cat() -> CatResponse | None:
     except (httpx.RequestError, Exception) as e:
         logging.error(f"Ошибка при получении кота: {e}")
         return None
+    except httpx.ConnectTimeout:
+        logging.error("Таймаут подключения к API кота")
+        return None
 
+@cache(expire=5*60)  # Кэшировать на 5 минут
 @router.get("/cat", response_model=None)
 async def cat() -> dict:
     cat_response = await get_cat()

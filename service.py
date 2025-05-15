@@ -1,7 +1,7 @@
 import os
+import json
 import subprocess
 from pathlib import Path
-import json
 from variables import *
 
 BASE_DIR = Path(__file__).resolve().parent

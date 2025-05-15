@@ -43,11 +43,11 @@
                     <span class="material-icons">format_quote</span>
                 </div>
                 <div>
-                    <span>{{ quotes['Quote'] }}</span>
+                    <span>{{ quotes['text'] }}</span>
                 </div>
             </div>
             <div class="quote-author">
-                <span>{{ quotes['Author'] }}</span>
+                <span>{{ quotes['author'] }}</span>
             </div>
         </div>
         {% if weather %}
@@ -82,7 +82,7 @@
         </div>
         <div class="dashboard-notes">
             <h1>Мои заметки</h1>
-            <form method="post" action="/notes/add" class="note-form">
+            <form method="post" action="/api/notes/add" class="note-form">
                 <input type="text" name="note" placeholder="Новая заметка" required>
                 <button id="add-note-btn" type="submit">
                     <span class="material-icons">add</span>Добавить
@@ -91,14 +91,14 @@
             {% if error %}
                 <div id="note-error-tooltip" class="tooltip-visible">
                     <span class="material-icons">error_outline</span>
-                    {{ error }}
+                    {{ error | e }}
                 </div>
             {% endif %}
             <ul class="notes">
                 {% for note in notes %}
                 <li>
                     <span>{{ note }}</span>
-                    <form action="/notes/delete/{{ loop.index0 }}" method="post" style="display:inline;">
+                    <form action="/api/notes/delete/{{ loop.index0 }}" method="post" style="display:inline;">
                         <button type="submit" title="Удалить" style="background:none; border:none; padding:0; cursor:pointer;">
                             <span class="material-icons">delete</span>
                         </button>
