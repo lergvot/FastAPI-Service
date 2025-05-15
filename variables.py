@@ -15,3 +15,9 @@ longitude = 37.62
 
 # Заглушка кота
 CAT_FALLBACK = "/static/cat_fallback.gif"
+
+# Путь к файлу с версиями
+VERSION_FILE = BASE_DIR / "version.txt"
+
+# Путь к файлу с количеством посещений
+VISITS_FILE = BASE_DIR / "visits.txt"

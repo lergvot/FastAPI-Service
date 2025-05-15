@@ -1,9 +1,11 @@
 import os
 import subprocess
 from pathlib import Path
+import json
+from variables import *
 
 BASE_DIR = Path(__file__).resolve().parent
-VISITS_FILE = BASE_DIR / "visits.txt"
+
 
 def get_visits() -> int:
     if VISITS_FILE.exists():
@@ -51,3 +53,29 @@ def get_version() -> str:
         return f"v{version}"
     else:
         return f"v{version} ({env} {git_hash})"
+
+# Загрузка данных при старте
+def load_json_file(file_path: Path) -> list:
+    """Загружает JSON-файл, возвращает пустой список при ошибке"""
+    if file_path.exists():
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except (json.JSONDecodeError, OSError):
+            return []
+    return []
+
+notes = load_json_file(NOTES_FILE)
+quotes = load_json_file(QUOTE_FILE)
+
+def load_notes() -> list:
+    """Загружает заметки"""
+    return load_json_file(NOTES_FILE)
+
+def save_notes(notes: list) -> None:
+    """Сохраняет заметки"""
+    try:
+        with open(NOTES_FILE, "w", encoding="utf-8") as f:
+            json.dump(notes, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
