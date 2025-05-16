@@ -2,16 +2,18 @@ import json
 import random
 import logging
 from fastapi import APIRouter, HTTPException
+from typing import List, Dict
 from variables import *
 from service import *
 
 logging.basicConfig(level=logging.INFO)
 router = APIRouter()
 
-quotes = load_json_file(QUOTE_FILE)
+# Загрузка цитат при старте
+quotes: List[Dict] = load_json_file(QUOTE_FILE)
 
 @router.get("/quotes")
-async def get_quotes():
+async def get_quotes() -> Dict[str, List[Dict]]:
     """Получение всех цитат"""
     if not QUOTE_FILE.exists():
         raise HTTPException(status_code=404, detail="Файл с цитатами не найден.")
@@ -27,7 +29,7 @@ async def get_quotes():
         raise HTTPException(status_code=500, detail="Ошибка чтения файла с цитатами")
 
 @router.get("/quotes/random")
-async def get_random_quote():
+async def get_random_quote() -> Dict:
     """Получение случайной цитаты"""
     if not QUOTE_FILE.exists():
         raise HTTPException(status_code=404, detail="Файл с цитатами не найден.")
@@ -43,7 +45,7 @@ async def get_random_quote():
     raise HTTPException(status_code=404, detail="No quotes available.")
 
 @router.get("/quotes/search")
-async def search_quote(author: str = ""):
+async def search_quote(author: str = "") -> Dict[str, List[Dict]]:
     """Поиск цитат по автору"""
     if not QUOTE_FILE.exists():
         raise HTTPException(status_code=404, detail="Файл с цитатами не найден.")
@@ -60,7 +62,7 @@ async def search_quote(author: str = ""):
     raise HTTPException(status_code=404, detail="Цитаты не найдены.")
 
 @router.get("/quotes/{quote_id}")
-async def get_quote_by_id(quote_id: int):
+async def get_quote_by_id(quote_id: int) -> Dict[str, Dict]:
     """Получение цитаты по ID"""
     if not QUOTE_FILE.exists():
         raise HTTPException(status_code=404, detail="Файл с цитатами не найден.")

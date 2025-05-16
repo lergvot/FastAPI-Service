@@ -1,10 +1,10 @@
-
-from fastapi import APIRouter
-from fastapi_cache.decorator import cache
-from pydantic import BaseModel
-from variables import *
 import httpx
 import logging
+from fastapi import APIRouter
+from fastapi_cache import FastAPICache
+from pydantic import BaseModel
+from typing import Dict, Any
+from variables import CAT_FALLBACK
 
 router = APIRouter()
 
@@ -15,7 +15,6 @@ class CatResponse(BaseModel):
     height: int
 
 async def get_cat() -> CatResponse | None:
-    """Получаем изображение кота"""
     url = "https://api.thecatapi.com/v1/images/search"
     try:
         async with httpx.AsyncClient(timeout=3.0) as client:
@@ -41,11 +40,26 @@ async def get_cat() -> CatResponse | None:
         logging.error("Таймаут подключения к API кота")
         return None
 
-@cache(expire=5*60)  # Кэшировать на 5 минут
 @router.get("/cat", response_model=None)
-async def cat() -> dict:
+async def cat() -> Dict[str, Any]:
+    """Получаем изображение кота"""
+    cache_key = "cat_cache"
+    cached_data: Dict[str, Any] | None = await FastAPICache.get_backend().get(cache_key)
+    
+    # Если данные есть в кэше
+    if cached_data:
+        logging.info("✅ Возвращаем кэшированного кота")
+        return cached_data
+    
+    # Если кэш пустой - запрашиваем API
     cat_response = await get_cat()
+    
     if not cat_response:
-        logging.warning("Используем заглушку для кота")
-        return ({"url": CAT_FALLBACK})
-    return ({"url": cat_response.url})
+        logging.warning("☑️ Используем заглушку для кота")
+        result: Dict[str, Any] = {"url": CAT_FALLBACK}
+    else:
+        result: Dict[str, Any] = {"url": cat_response.url}
+    
+    # Сохраняем в кэш на 5 минут
+    await FastAPICache.get_backend().set(cache_key, result, expire=5*60)
+    return result

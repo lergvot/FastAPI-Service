@@ -1,10 +1,15 @@
 import httpx
-from fastapi import FastAPI, Request
+import logging
+import asyncio
+from dotenv import load_dotenv
+from fastapi import FastAPI, Request, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from dotenv import load_dotenv
-from variables import *
-from service import *
+from fastapi_cache import FastAPICache
+from fastapi_cache.backends.inmemory import InMemoryBackend
+from typing import Dict, Any
+from service import increment_visits, get_version
+from variables import BASE_DIR, BASE_URL, CAT_FALLBACK, WEATHER_FALLBACK
 from app.weather import router as weather_router
 from app.cat import router as cat_router
 from app.quotes import router as quotes_router
@@ -12,6 +17,10 @@ from app.notes import router as notes_router
 
 load_dotenv()
 app = FastAPI()
+
+@app.on_event("startup")
+async def startup():
+    FastAPICache.init(InMemoryBackend(), prefix="fastapi-cache")
 
 app.include_router(weather_router, prefix="/api")
 app.include_router(cat_router, prefix="/api")
@@ -21,47 +30,50 @@ app.include_router(notes_router, prefix="/api")
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
+async def fetch_data(url: str) -> Dict[str, Any] | None:
+    try:
+        async with httpx.AsyncClient(timeout=3) as client:
+            response = await client.get(url)
+            response.raise_for_status()
+            return response.json()
+    except Exception as e:
+        logging.error(f"Ошибка при запросе к {url}: {str(e)}")
+        return None  # Возвращаем None вместо проброса исключения
+
 @app.get("/")
-async def index(request: Request):
+async def index(request: Request) -> Response:
     """Главная страница"""
 
-    # Получаем погоду с эндпоинта /api/weather
-    async with httpx.AsyncClient() as client:
-        weather_response = await client.get(f"{BASE_URL}/api/weather") # BASE_URL = "http://localhost:8000"
-        weather_response.raise_for_status()
-        weather_data = weather_response.json()
-    
-    # Получаем кота с эндпоинта /api/cat
-    async with httpx.AsyncClient() as client:
-        cat_response = await client.get(f"{BASE_URL}/api/cat")
-        cat = cat_response.json()
+    weather_data, cat, quote, notes_data = await asyncio.gather(
+        fetch_data(f"{BASE_URL}/api/weather"),
+        fetch_data(f"{BASE_URL}/api/cat"),
+        fetch_data(f"{BASE_URL}/api/quotes/random"),
+        fetch_data(f"{BASE_URL}/api/notes"),
+        return_exceptions=True  # Позволяет обрабатывать исключения как результаты
+    )
 
-    # Получаем цитату с эндпоинта /api/quotes/random
-    async with httpx.AsyncClient() as client:
-        quotes_response = await client.get(f"{BASE_URL}/api/quotes/random")
-        quote = quotes_response.json()
-
-    # Получаем заметки с эндпоинта /api/notes
-    async with httpx.AsyncClient() as client:
-        notes_response = await client.get(f"{BASE_URL}/api/notes")
-        notes_data = notes_response.json()
-        notes = notes_data["notes"]
+    # Обрабатываем возможные ошибки
+    notes = notes_data["notes"] if isinstance(notes_data, dict) else []
+    weather = weather_data.get('current_weather', {}) if isinstance(weather_data, dict) else WEATHER_FALLBACK
+    quote = quote if isinstance(quote, dict) else {}
+    cat = cat if isinstance(cat, dict) else {"url": CAT_FALLBACK}
 
     visits = increment_visits()
     version = get_version()
     error = request.query_params.get("error")
+
     return templates.TemplateResponse("index.html", {
         "request": request,
         "notes": notes,
-        "weather": weather_data['current_weather'],
+        "weather": weather, #weather_data['current_weather'],
         "quotes": quote,
         "cat": cat,
         "version": version,
         "visits": visits,
         "error": error
     })
-        
-@app.get("/info.html")
-async def info(request: Request):
+
+@app.get("/about.html")
+async def info(request: Request) -> Response:
     """Страница информации"""
-    return templates.TemplateResponse("info.html", {"request": request})
+    return templates.TemplateResponse("about.html", {"request": request})

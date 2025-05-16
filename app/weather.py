@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from asyncio import Lock
-from variables import *
+from variables import latitude, longitude, WEATHER_FALLBACK
 
 logging.basicConfig(level=logging.INFO)
 router = APIRouter()
@@ -33,7 +33,6 @@ next_update_time = None
 
 def calculate_next_update(api_time_str: str) -> datetime:
     api_time = datetime.fromisoformat(api_time_str.replace("Z", "+00:00"))
-    #api_time = datetime.fromisoformat(api_time, tzinfo=timezone.utc)
     next_update = api_time + timedelta(minutes=15)
     return next_update.replace(tzinfo=timezone.utc)
 
@@ -75,11 +74,11 @@ async def fetch_weather() -> WeatherResponse:
     
     async with weather_lock:  # Защита от конкурентного доступа
         if next_update_time and datetime.now(timezone.utc) < next_update_time:
-            logging.info("✅ Возвращаем кэшированные данные")
+            logging.info("✅ Возвращаем кэшированные данные погоды")
             return weather_cache
         
         if next_update_time and datetime.now(timezone.utc) < next_update_time and weather_cache:
-            logging.info("✅ Возвращаем кэшированные данные")
+            logging.info("✅ Возвращаем кэшированные данные погоды с учётом weather_cache")
             return weather_cache
 
     url = f"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current_weather=true"
@@ -115,22 +114,23 @@ async def fetch_weather() -> WeatherResponse:
                 elevation=data["elevation"],
                 current_weather=CurrentWeather(**processed_weather)
             )
-            
             weather_cache = weather_data
             return weather_data
             
     except httpx.HTTPStatusError as e:
         raise HTTPException(status_code=502, detail=f"Ошибка API: {str(e)}")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Ошибка сервера: {str(e)}")
     except httpx.ConnectTimeout:
         logging.error("Таймаут подключения к API погоды")
+        raise HTTPException(status_code=504, detail="Таймаут соединения")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Ошибка сервера: {str(e)}")
 
 @router.get("/weather", response_model=WeatherResponse)
-async def get_weather():
+async def get_weather() -> WeatherResponse:
     try:
         return await fetch_weather()
     except HTTPException as he:
         raise he
     except Exception:
-        raise HTTPException(status_code=500, detail="Внутренняя ошибка")
+        logging.warning("Используем заглушку для погоды")
+        return WEATHER_FALLBACK

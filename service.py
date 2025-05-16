@@ -2,10 +2,10 @@ import os
 import json
 import subprocess
 from pathlib import Path
-from variables import *
+from typing import List, Dict
+from variables import VISITS_FILE, NOTES_FILE, QUOTE_FILE
 
 BASE_DIR = Path(__file__).resolve().parent
-
 
 def get_visits() -> int:
     if VISITS_FILE.exists():
@@ -55,7 +55,7 @@ def get_version() -> str:
         return f"v{version} ({env} {git_hash})"
 
 # Загрузка данных при старте
-def load_json_file(file_path: Path) -> list:
+def load_json_file(file_path: Path) -> List[Dict]:
     """Загружает JSON-файл, возвращает пустой список при ошибке"""
     if file_path.exists():
         try:
@@ -68,11 +68,11 @@ def load_json_file(file_path: Path) -> list:
 notes = load_json_file(NOTES_FILE)
 quotes = load_json_file(QUOTE_FILE)
 
-def load_notes() -> list:
+def load_notes() -> List[str]:
     """Загружает заметки"""
     return load_json_file(NOTES_FILE)
 
-def save_notes(notes: list) -> None:
+def save_notes(notes: List[str]) -> None:
     """Сохраняет заметки"""
     try:
         with open(NOTES_FILE, "w", encoding="utf-8") as f:

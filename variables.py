@@ -1,4 +1,5 @@
 from pathlib import Path
+from datetime import datetime
 
 # Константы приложения
 BASE_DIR = Path(__file__).resolve().parent
@@ -22,3 +23,13 @@ VERSION_FILE = BASE_DIR / "version.txt"
 
 # Путь к файлу с количеством посещений
 VISITS_FILE = BASE_DIR / "visits.txt"
+
+# Заглушка погоды
+WEATHER_FALLBACK = {
+    "temperature": 0.0,
+    "windspeed": 0.0,
+    "wind_direction": "Северный",
+    "weather_text": "Данные недоступны",
+    "is_day": 1,
+    "moscow_time": datetime.now().strftime("%H:%M")
+}

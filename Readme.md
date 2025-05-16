@@ -78,7 +78,7 @@ venv/bin/python -m uvicorn main:app --reload
 │   │   ├── style.css
 │   ├── templates/
 │   │   ├── index.html
-│   │   ├── info.html
+│   │   ├── about.html
 │   ├── update_github_ips.sh
 │   ├── variables.py
 │   ├── version.txt
