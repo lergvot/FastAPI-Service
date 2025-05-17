@@ -49,4 +49,38 @@ venv/bin/python -m uvicorn main:app --reload
 - Откройте веб-интерфейс в браузере по адресу `http://localhost:8000`
 - Используйте предоставленные эндпоинты API для интеграции
 
+## Структура
+
+├── API_Project/
+│   ├── .env
+│   ├── .gitattributes
+│   ├── .github/
+│   │   ├── workflows/
+│   │   │   ├── deploy.yml
+│   ├── .gitignore
+│   ├── app/
+│   │   ├── cat.py
+│   │   ├── notes.py
+│   │   ├── quotes.py
+│   │   ├── weather.py
+│   │   ├── _init_.py
+│   ├── data/
+│   │   ├── notes.json
+│   │   ├── quotes.json
+│   ├── main.py
+│   ├── Readme.md
+│   ├── requirements.txt
+│   ├── service.py
+│   ├── static/
+│   │   ├── cat_fallback.gif
+│   │   ├── favicon.svg
+│   │   ├── info.mp4
+│   │   ├── style.css
+│   ├── templates/
+│   │   ├── index.html
+│   │   ├── about.html
+│   ├── update_github_ips.sh
+│   ├── variables.py
+│   ├── version.txt
+│   ├── visits.txt
 

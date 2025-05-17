@@ -43,11 +43,11 @@
                     <span class="material-icons">format_quote</span>
                 </div>
                 <div>
-                    <span>{{ quotes['Quote'] }}</span>
+                    <span>{{ quotes['text'] }}</span>
                 </div>
             </div>
             <div class="quote-author">
-                <span>{{ quotes['Author'] }}</span>
+                <span>{{ quotes['author'] }}</span>
             </div>
         </div>
         {% if weather %}
@@ -58,19 +58,19 @@
             </div>
             <div class="weather-item">
                 <span class="material-icons" style="color:#1976d2;">cloud</span>
-                Сейчас: {{ weather.weathercode }}
+                Сейчас: {{ weather.weather_text }}
             </div>
             <div class="weather-item">
                 <span class="material-icons" style="color:#1976d2;">thermostat</span>
-                Температура: {{ weather.temperature }}
+                Температура: {{ weather.temperature }}°C
             </div>
             <div class="weather-item">
                 <span class="material-icons" style="color:#1976d2;">air</span>
-                Ветер: {{ weather.windspeed }} ({{ weather.winddirection }})
+                Ветер: {{ weather.windspeed }} м/с ({{ weather.wind_direction }})
             </div>
             <div class="weather-item">
                 <span class="material-icons" style="color:#1976d2;">schedule</span>
-                Время измерения: {{ weather.time }}
+                Время измерения: {{ weather.moscow_time }}
             </div>
         </div>
         {% endif %}
@@ -82,7 +82,7 @@
         </div>
         <div class="dashboard-notes">
             <h1>Мои заметки</h1>
-            <form method="post" action="/notes/add" class="note-form">
+            <form method="post" action="/api/notes/add" class="note-form">
                 <input type="text" name="note" placeholder="Новая заметка" required>
                 <button id="add-note-btn" type="submit">
                     <span class="material-icons">add</span>Добавить
@@ -91,14 +91,14 @@
             {% if error %}
                 <div id="note-error-tooltip" class="tooltip-visible">
                     <span class="material-icons">error_outline</span>
-                    {{ error }}
+                    {{ error | e }}
                 </div>
             {% endif %}
             <ul class="notes">
                 {% for note in notes %}
                 <li>
                     <span>{{ note }}</span>
-                    <form action="/notes/delete/{{ loop.index0 }}" method="post" style="display:inline;">
+                    <form action="/api/notes/delete/{{ loop.index0 }}" method="post" style="display:inline;">
                         <button type="submit" title="Удалить" style="background:none; border:none; padding:0; cursor:pointer;">
                             <span class="material-icons">delete</span>
                         </button>
@@ -112,8 +112,8 @@
         <p>Погода: <a href="https://open-meteo.com/en/docs" target="_blank">Open-Meteo API</a></p>
         <p>Котики: <a href="https://developers.thecatapi.com/" target="_blank">TheCatAPI</a></p>
         <p>API: <a href="/docs" target="_blank">Swagger API</a></p>
-        <p>Для чего всё это: <a href="/info.html" target="_self">Info</a></p>
-        <p>Версия приложения: {{ version }}</p>
+        <p>Для чего всё это: <a href="/about.html" target="_self">About</a></p>
+        <p>Версия: {{ version }}</p>
         <p>Посещений: {{ visits }}</p>
     </footer>
 </body>
