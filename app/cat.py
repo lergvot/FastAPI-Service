@@ -3,6 +3,8 @@ import logging
 from fastapi import APIRouter
 from fastapi_cache import FastAPICache
 from pydantic import BaseModel
+from fastapi_cache.decorator import cache
+from fastapi import HTTPException
 from typing import Dict, Any
 from variables import CAT_FALLBACK
 
@@ -47,22 +49,26 @@ async def get_cat() -> CatResponse | None:
 async def cat() -> Dict[str, Any]:
     """Получаем изображение кота"""
     cache_key = "cat_cache"
-    cached_data: Dict[str, Any] | None = await FastAPICache.get_backend().get(cache_key)
 
-    # Если данные есть в кэше
+    # Получаем бэкенд кэша
+    backend = FastAPICache.get_backend()
+    if not backend:
+        raise RuntimeError("Кэш не инициализирован")
+
+    # Проверяем кэш
+    cached_data: Dict[str, Any] | None = await backend.get(cache_key)
     if cached_data:
         logging.info("✅ Возвращаем кэшированного кота")
         return cached_data
 
-    # Если кэш пустой - запрашиваем API
+    # Запрашиваем API, если кэш пуст
     cat_response = await get_cat()
-
     if not cat_response:
         logging.warning("☑️ Используем заглушку для кота")
-        result: Dict[str, Any] = {"url": CAT_FALLBACK}
+        result = {"url": CAT_FALLBACK}
     else:
-        result: Dict[str, Any] = {"url": cat_response.url}
+        result = {"url": cat_response.url}
 
-    # Сохраняем в кэш на 5 минут
-    await FastAPICache.get_backend().set(cache_key, result, expire=5*60)
+    # Сохраняем в кэш
+    await backend.set(cache_key, result, expire=5 * 60)
     return result

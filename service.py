@@ -1,3 +1,5 @@
+# service.py
+
 import os
 import json
 import subprocess
@@ -6,6 +8,7 @@ from typing import List, Dict
 from variables import VISITS_FILE, NOTES_FILE, QUOTE_FILE
 
 BASE_DIR = Path(__file__).resolve().parent
+
 
 def get_visits() -> int:
     if VISITS_FILE.exists():
@@ -16,6 +19,7 @@ def get_visits() -> int:
             return 0
     return 0
 
+
 def increment_visits() -> int:
     visits = get_visits() + 1
     try:
@@ -25,21 +29,27 @@ def increment_visits() -> int:
         pass
     return visits
 
+
 def get_git_version() -> str:
     try:
-        return subprocess.check_output(
-            ["git", "rev-parse", "--short", "HEAD"],
-            cwd=BASE_DIR,
-            stderr=subprocess.DEVNULL
-        ).decode("utf-8").strip()
+        return (
+            subprocess.check_output(
+                ["git", "rev-parse", "--short", "HEAD"],
+                cwd=BASE_DIR,
+                stderr=subprocess.DEVNULL,
+            )
+            .decode("utf-8")
+            .strip()
+        )
     except (subprocess.CalledProcessError, OSError):
         return "unknown"
+
 
 def get_version() -> str:
     version_file = BASE_DIR / "version.txt"
     env = os.getenv("ENV", "prod")
     git_hash = get_git_version()
-    
+
     if version_file.exists():
         try:
             with open(version_file, "r", encoding="utf-8") as f:
@@ -48,11 +58,12 @@ def get_version() -> str:
             return "0.0.0"
     else:
         version = "0.0.0"
-    
+
     if env == "prod":
         return f"v{version}"
     else:
         return f"v{version} ({env} {git_hash})"
+
 
 # Загрузка данных при старте
 def load_json_file(file_path: Path) -> List[Dict]:
@@ -65,12 +76,15 @@ def load_json_file(file_path: Path) -> List[Dict]:
             return []
     return []
 
+
 notes = load_json_file(NOTES_FILE)
 quotes = load_json_file(QUOTE_FILE)
+
 
 def load_notes() -> List[str]:
     """Загружает заметки"""
     return load_json_file(NOTES_FILE)
+
 
 def save_notes(notes: List[str]) -> None:
     """Сохраняет заметки"""
