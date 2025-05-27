@@ -1,4 +1,4 @@
-name: CI/CD FastAPI
+name: Deploy App
 
 on:
   push:
@@ -26,7 +26,7 @@ jobs:
           pip install pytest pytest-asyncio httpx
 
       - name: Run tests
-        run: pytest tests/
+        run: pytest -v --disable-warnings
 
   deploy:
     name: Deploy to Server

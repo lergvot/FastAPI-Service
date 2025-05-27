@@ -48,6 +48,7 @@ async def get_cat() -> CatResponse | None:
 
 
 @router.get("/cat", response_model=None, tags=["Cat"])
+@router.get("/cat?nocache=true", response_model=None, tags=["Cat"])
 async def cat(request: Request) -> Dict[str, Any]:
     use_cache = request.query_params.get("nocache") != "true"
     cache_key = "cat_cache"

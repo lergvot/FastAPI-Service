@@ -1,5 +1,4 @@
 # main.py
-
 import httpx
 import logging
 import asyncio
@@ -18,6 +17,13 @@ from app.weather import router as weather_router
 from app.cat import router as cat_router
 from app.quotes import router as quotes_router
 from app.notes import router as notes_router
+
+
+# Проба унификации логирования
+import logging.config
+from logging_config import LOGGING_CONFIG
+
+logging.config.dictConfig(LOGGING_CONFIG)
 
 
 @asynccontextmanager

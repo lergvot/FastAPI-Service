@@ -8,6 +8,7 @@ from fastapi_cache import FastAPICache
 # 1. Успешный случай с моками
 @respx.mock
 @pytest.mark.asyncio
+@pytest.mark.category("cat")
 async def test_api_cat_success(client):
     mock_url = "https://cdn.fakecat.com/cat.jpg"
     api_mock = respx.get("https://api.thecatapi.com/v1/images/search").mock(
