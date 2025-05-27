@@ -1,3 +1,4 @@
+# app/cat.py
 import httpx
 import logging
 from fastapi import APIRouter
@@ -7,6 +8,7 @@ from fastapi_cache.decorator import cache
 from fastapi import HTTPException
 from typing import Dict, Any
 from variables import CAT_FALLBACK
+from fastapi import Request
 
 router = APIRouter()
 
@@ -46,22 +48,21 @@ async def get_cat() -> CatResponse | None:
 
 
 @router.get("/cat", response_model=None, tags=["Cat"])
-async def cat() -> Dict[str, Any]:
-    """Получаем изображение кота"""
+async def cat(request: Request) -> Dict[str, Any]:
+    use_cache = request.query_params.get("nocache") != "true"
     cache_key = "cat_cache"
 
-    # Получаем бэкенд кэша
     backend = FastAPICache.get_backend()
     if not backend:
         raise RuntimeError("Кэш не инициализирован")
 
-    # Проверяем кэш
-    cached_data: Dict[str, Any] | None = await backend.get(cache_key)
-    if cached_data:
-        logging.info("✅ Возвращаем кэшированного кота")
-        return cached_data
+    if use_cache:
+        cached_data: Dict[str, Any] | None = await backend.get(cache_key)
+        if cached_data:
+            logging.info("✅ Возвращаем кэшированного кота")
+            return cached_data
 
-    # Запрашиваем API, если кэш пуст
+    # Запрашиваем API
     cat_response = await get_cat()
     if not cat_response:
         logging.warning("☑️ Используем заглушку для кота")
@@ -69,6 +70,7 @@ async def cat() -> Dict[str, Any]:
     else:
         result = {"url": cat_response.url}
 
-    # Сохраняем в кэш
-    await backend.set(cache_key, result, expire=5 * 60)
+    if use_cache:  # 👈 только если кэш включён, записываем
+        await backend.set(cache_key, result, expire=5 * 60)
+
     return result

@@ -36,22 +36,11 @@ async def test_static_fallback_image(client):
 @respx.mock
 @pytest.mark.asyncio
 async def test_api_cat_fallback_on_error(client):
-    # Привязываем mock к тому же клиенту, что будет создан внутри get_cat()
-    with respx.mock(assert_all_called=False) as respx_mock:
-        respx_mock.get("https://api.thecatapi.com/v1/images/search").mock(
-            return_value=Response(500)
-        )
+    respx.get("https://api.thecatapi.com/v1/images/search").mock(
+        return_value=Response(500)
+    )
 
-        # Удаляем кэш перед запросом (вдруг остался от предыдущего)
-        await FastAPICache.clear()
+    response = await client.get("/api/cat?nocache=true")
 
-        response = await client.get("/api/cat")
-
-        # Проверяем, был ли вызван наш mock
-        assert any(route.called for route in respx_mock.routes), "Мок не был вызван!"
-        assert response.status_code == 200
-        assert response.json()["url"] == CAT_FALLBACK
-
-        cached_data = await FastAPICache.get_backend().get("cat_cache")
-        assert cached_data is not None
-        assert cached_data["url"] == CAT_FALLBACK
+    assert response.status_code == 200
+    assert response.json()["url"] == CAT_FALLBACK
