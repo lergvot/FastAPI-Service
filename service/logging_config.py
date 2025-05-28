@@ -4,7 +4,7 @@ LOGGING_CONFIG = {
     "disable_existing_loggers": False,
     "formatters": {
         "default": {
-            "format": "\n%(asctime)s | %(levelname)-8s | %(message)s",
+            "format": "%(levelname)-8s | %(message)s | %(asctime)s",
         },
     },
     "handlers": {

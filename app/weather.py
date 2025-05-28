@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from typing import Dict, Any
 from fastapi_cache import FastAPICache
 from service.variables import latitude, longitude, WEATHER_FALLBACK
+from service.cache import get_cached, set_cached, ttl_logic
 
 router = APIRouter()
 
@@ -94,18 +95,6 @@ def to_moscow_time(iso_time: str) -> str:
     return moscow_dt.strftime("%H:%M")
 
 
-def calculate_next_update(last_update_iso: str) -> datetime:
-    last_update = datetime.fromisoformat(last_update_iso.replace("Z", "+00:00"))
-    minute = (last_update.minute // 15 + 1) * 15
-    if minute == 60:
-        next_update = last_update.replace(
-            minute=0, second=0, microsecond=0
-        ) + timedelta(hours=1)
-    else:
-        next_update = last_update.replace(minute=minute, second=0, microsecond=0)
-    return next_update.astimezone(timezone.utc)
-
-
 async def fetch_weather() -> WeatherResponse | None:
     url = f"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current_weather=true"
     try:
@@ -142,57 +131,32 @@ async def fetch_weather() -> WeatherResponse | None:
         return None
 
 
-@router.get("/weather", response_model=None, tags=["Weather"])
-@router.get("/weather?nocache=true", response_model=None, tags=["Service"])
-async def weather(request: Request) -> Dict[str, Any]:
+@router.get("/weather", tags=["Weather"])
+@router.get("/weather?nocache=true", tags=["Service"])
+async def weather(request: Request):
     use_cache = request.query_params.get("nocache") != "true"
     cache_key = "weather_cache"
-    backend = FastAPICache.get_backend()
 
-    if use_cache and backend:
-        cached_data = await backend.get(cache_key)
-        if cached_data:
-            try:
-                # Проверяем, пора ли обновлять кэш
-                last_iso = cached_data["current_weather"]["moscow_time"]
-                last_update = datetime.strptime(last_iso, "%H:%M").replace(
-                    year=datetime.utcnow().year,
-                    month=datetime.utcnow().month,
-                    day=datetime.utcnow().day,
-                    tzinfo=timezone.utc,
-                ) - timedelta(
-                    hours=3
-                )  # обратно из Москвы в UTC
+    if use_cache:
+        cached = await get_cached(cache_key)
+        if cached and ttl_logic(cached):
+            logging.info("✅ Кэш погоды")
+            return cached
+        logging.info("♻️ Кэш погоды устарел или отсутствует")
 
-                now_utc = datetime.now(timezone.utc)
-                next_update = calculate_next_update(
-                    last_update.isoformat().replace("+00:00", "Z")
-                )
-                if now_utc < next_update:
-                    logging.info("✅ Возвращаем кэшированную погоду")
-                    return cached_data
-                else:
-                    logging.info("♻️ Кэш устарел, получаем новые данные")
-            except Exception as e:
-                logging.warning(f"⚠️ Ошибка при проверке актуальности кэша: {e}")
-
-    # Получаем свежую погоду
     weather_data = await fetch_weather()
     if not weather_data:
-        logging.warning("☑️ Используем заглушку для погоды")
+        logging.warning("☑️ Используем fallback-погоду")
         return WEATHER_FALLBACK
 
     result = weather_data.dict()
 
-    if use_cache and backend:
-        try:
-            # Расчёт TTL до следующего 15-минутного слота
-            now = datetime.now(timezone.utc)
-            next_update = calculate_next_update(now.isoformat())
-            ttl = int((next_update - now).total_seconds())
-            await backend.set(cache_key, result, expire=ttl)
-            logging.info(f"Кэш обновлён, TTL = {ttl} сек")
-        except Exception as e:
-            logging.warning(f"⚠️ Не удалось сохранить в кэш: {e}")
+    if use_cache:
+        ttl = ttl_logic(result, return_ttl=True)
+        if isinstance(ttl, int) and ttl > 0:
+            await set_cached(cache_key, result, ttl)
+            logging.info(f"🔁 Кэш погоды обновлён, TTL = {ttl} сек")
+        else:
+            logging.warning("⚠️ TTL погоды не определён, кэш не сохраняем")
 
     return result
