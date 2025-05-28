@@ -1,8 +1,8 @@
+# tests/test_cat.py
 import pytest
 import respx
 from httpx import Response
-from variables import CAT_FALLBACK
-from fastapi_cache import FastAPICache
+from service.variables import CAT_FALLBACK
 
 
 # 1. Успешный случай с моками
@@ -18,7 +18,7 @@ async def test_api_cat_success(client):
         )
     )
 
-    response = await client.get("/api/cat")
+    response = await client.get("/api/cat?nocache=true")
 
     assert api_mock.called, "API не был вызван!"
     assert response.status_code == 200

@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from fastapi_cache.decorator import cache
 from fastapi import HTTPException
 from typing import Dict, Any
-from variables import CAT_FALLBACK
+from service.variables import CAT_FALLBACK
 from fastapi import Request
 
 router = APIRouter()
@@ -48,7 +48,7 @@ async def get_cat() -> CatResponse | None:
 
 
 @router.get("/cat", response_model=None, tags=["Cat"])
-@router.get("/cat?nocache=true", response_model=None, tags=["Cat"])
+@router.get("/cat?nocache=true", response_model=None, tags=["Service"])
 async def cat(request: Request) -> Dict[str, Any]:
     use_cache = request.query_params.get("nocache") != "true"
     cache_key = "cat_cache"

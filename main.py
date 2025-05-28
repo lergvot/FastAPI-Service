@@ -11,8 +11,8 @@ from fastapi_cache import FastAPICache
 from fastapi_cache.backends.inmemory import InMemoryBackend
 from typing import Dict, Any
 from contextlib import asynccontextmanager
-from service import increment_visits, get_version
-from variables import BASE_DIR, BASE_URL, CAT_FALLBACK, WEATHER_FALLBACK
+from service.service import increment_visits, get_version
+from service.variables import BASE_DIR, BASE_URL, CAT_FALLBACK, WEATHER_FALLBACK
 from app.weather import router as weather_router
 from app.cat import router as cat_router
 from app.quotes import router as quotes_router
@@ -21,7 +21,7 @@ from app.notes import router as notes_router
 
 # Проба унификации логирования
 import logging.config
-from logging_config import LOGGING_CONFIG
+from service.logging_config import LOGGING_CONFIG
 
 logging.config.dictConfig(LOGGING_CONFIG)
 

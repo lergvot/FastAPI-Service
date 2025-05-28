@@ -1,10 +1,11 @@
+# app/quotes.py
 import json
 import random
 import logging
 from fastapi import APIRouter, HTTPException
 from typing import List, Dict
-from variables import *
-from service import *
+from service.variables import *
+from service.service import *
 
 logging.basicConfig(level=logging.INFO)
 router = APIRouter()
@@ -17,8 +18,7 @@ quotes: List[Dict] = load_json_file(QUOTE_FILE)
 async def get_quotes() -> Dict[str, List[Dict]]:
     """Получение всех цитат"""
     if not QUOTE_FILE.exists():
-        raise HTTPException(
-            status_code=404, detail="Файл с цитатами не найден.")
+        raise HTTPException(status_code=404, detail="Файл с цитатами не найден.")
 
     try:
         with open(QUOTE_FILE, "r", encoding="utf-8") as f:
@@ -26,19 +26,16 @@ async def get_quotes() -> Dict[str, List[Dict]]:
             if quotes:
                 return {"quotes": quotes}
             else:
-                raise HTTPException(
-                    status_code=404, detail="No quotes available.")
+                raise HTTPException(status_code=404, detail="No quotes available.")
     except (json.JSONDecodeError, OSError):
-        raise HTTPException(
-            status_code=500, detail="Ошибка чтения файла с цитатами")
+        raise HTTPException(status_code=500, detail="Ошибка чтения файла с цитатами")
 
 
 @router.get("/quotes/random", tags=["Quotes"])
 async def get_random_quote() -> Dict:
     """Получение случайной цитаты"""
     if not QUOTE_FILE.exists():
-        raise HTTPException(
-            status_code=404, detail="Файл с цитатами не найден.")
+        raise HTTPException(status_code=404, detail="Файл с цитатами не найден.")
 
     try:
         with open(QUOTE_FILE, "r", encoding="utf-8") as f:
@@ -55,14 +52,14 @@ async def get_random_quote() -> Dict:
 async def search_quote(author: str = "") -> Dict[str, List[Dict]]:
     """Поиск цитат по автору"""
     if not QUOTE_FILE.exists():
-        raise HTTPException(
-            status_code=404, detail="Файл с цитатами не найден.")
+        raise HTTPException(status_code=404, detail="Файл с цитатами не найден.")
 
     try:
         with open(QUOTE_FILE, "r", encoding="utf-8") as f:
             quotes = json.load(f)
-            results = [q for q in quotes if author.lower()
-                       in q.get("Author", "").lower()]
+            results = [
+                q for q in quotes if author.lower() in q.get("Author", "").lower()
+            ]
             if results:
                 return {"quotes": results}
     except (json.JSONDecodeError, OSError):
@@ -75,8 +72,7 @@ async def search_quote(author: str = "") -> Dict[str, List[Dict]]:
 async def get_quote_by_id(quote_id: int) -> Dict[str, Dict]:
     """Получение цитаты по ID"""
     if not QUOTE_FILE.exists():
-        raise HTTPException(
-            status_code=404, detail="Файл с цитатами не найден.")
+        raise HTTPException(status_code=404, detail="Файл с цитатами не найден.")
 
     try:
         with open(QUOTE_FILE, "r", encoding="utf-8") as f:

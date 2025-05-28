@@ -1,11 +1,12 @@
+# app/notes.py
 import logging
 from fastapi import APIRouter
 from fastapi import Form, status
 from fastapi.responses import RedirectResponse
 from urllib.parse import urlencode
 from typing import List, Dict
-from variables import MAX_NOTES, MAX_NOTE_LENGTH
-from service import load_notes, save_notes
+from service.variables import MAX_NOTES, MAX_NOTE_LENGTH
+from service.service import load_notes, save_notes
 
 logging.basicConfig(level=logging.INFO)
 router = APIRouter()
@@ -20,8 +21,7 @@ def add_note(note: str = Form(...)) -> RedirectResponse:
         params = urlencode({"error": "Заметка не может быть пустой"})
         return RedirectResponse(f"/?{params}", status_code=status.HTTP_303_SEE_OTHER)
     if len(notes) >= MAX_NOTES:
-        params = urlencode(
-            {"error": "Превышено максимальное количество заметок"})
+        params = urlencode({"error": "Превышено максимальное количество заметок"})
         return RedirectResponse(f"/?{params}", status_code=status.HTTP_303_SEE_OTHER)
     if len(note) > MAX_NOTE_LENGTH:
         params = urlencode({"error": "Заметка слишком длинная"})

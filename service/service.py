@@ -1,13 +1,16 @@
-# service.py
-
+# service/service.py
 import os
 import json
 import subprocess
 from pathlib import Path
 from typing import List, Dict
-from variables import VISITS_FILE, NOTES_FILE, QUOTE_FILE
-
-BASE_DIR = Path(__file__).resolve().parent
+from service.variables import (
+    VISITS_FILE,
+    VERSION_FILE,
+    NOTES_FILE,
+    QUOTE_FILE,
+    BASE_DIR,
+)
 
 
 def get_visits() -> int:
@@ -46,13 +49,12 @@ def get_git_version() -> str:
 
 
 def get_version() -> str:
-    version_file = BASE_DIR / "version.txt"
     env = os.getenv("ENV", "prod")
     git_hash = get_git_version()
 
-    if version_file.exists():
+    if VERSION_FILE.exists():
         try:
-            with open(version_file, "r", encoding="utf-8") as f:
+            with open(VERSION_FILE, "r", encoding="utf-8") as f:
                 version = f.read().strip()
         except (OSError, UnicodeDecodeError):
             return "0.0.0"
