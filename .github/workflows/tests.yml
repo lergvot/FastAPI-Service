@@ -27,4 +27,4 @@ jobs:
 
     - name: Run tests
       run: |
-        pytest -v tests\test_cat.py
+        pytest -v tests::test_cat.py
