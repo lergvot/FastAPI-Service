@@ -8,6 +8,7 @@ from typing import Dict, Any
 from fastapi_cache import FastAPICache
 from service.variables import latitude, longitude, WEATHER_FALLBACK
 from service.cache import get_cached, set_cached, ttl_logic
+from service.decorators import cached_route
 
 router = APIRouter()
 
@@ -133,30 +134,11 @@ async def fetch_weather() -> WeatherResponse | None:
 
 @router.get("/weather", tags=["Weather"])
 @router.get("/weather?nocache=true", tags=["Service"])
-async def weather(request: Request):
-    use_cache = request.query_params.get("nocache") != "true"
-    cache_key = "weather_cache"
-
-    if use_cache:
-        cached = await get_cached(cache_key)
-        if cached and ttl_logic(cached):
-            logging.info("✅ Кэш погоды")
-            return cached
-        logging.info("♻️ Кэш погоды устарел или отсутствует")
-
+@cached_route(
+    "weather_cache", ttl=900, fallback_data=WEATHER_FALLBACK, source="weather"
+)
+async def weather(request: Request) -> dict:
     weather_data = await fetch_weather()
-    if not weather_data:
-        logging.warning("☑️ Используем fallback-погоду")
+    if weather_data is None:
         return WEATHER_FALLBACK
-
-    result = weather_data.dict()
-
-    if use_cache:
-        ttl = ttl_logic(result, return_ttl=True)
-        if isinstance(ttl, int) and ttl > 0:
-            await set_cached(cache_key, result, ttl)
-            logging.info(f"🔁 Кэш погоды обновлён, TTL = {ttl} сек")
-        else:
-            logging.warning("⚠️ TTL погоды не определён, кэш не сохраняем")
-
-    return result
+    return weather_data.dict()

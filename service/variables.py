@@ -8,11 +8,11 @@ QUOTE_FILE = BASE_DIR / "data" / "quotes.json"
 STATIC_DIR = BASE_DIR / "static"
 TEMPLATES_DIR = BASE_DIR / "templates"
 SERVICE_DIR = BASE_DIR / "service"
+BASE_URL = "http://localhost:8000"
 
-# Константы для приложения
+# Максимальное количество заметок и длина заметки
 MAX_NOTES = 10
 MAX_NOTE_LENGTH = 250
-BASE_URL = "http://localhost:8000"
 
 # Координаты Москвы
 latitude = 55.75

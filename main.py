@@ -21,7 +21,7 @@ from app.notes import router as notes_router
 
 # Проба унификации логирования
 import logging.config
-from service.logging_config import LOGGING_CONFIG
+from service.config import LOGGING_CONFIG
 
 logging.config.dictConfig(LOGGING_CONFIG)
 

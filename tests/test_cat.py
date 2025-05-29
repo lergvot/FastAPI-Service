@@ -45,3 +45,7 @@ async def test_api_cat_fallback_on_error(client):
 
     assert response.status_code == 200
     assert response.json()["url"] == CAT_FALLBACK
+
+
+# Пример использования времени жизни кэша для тестов
+# @cached_route("cat_cache", ttl=2)  # кэш будет жить 2 секунды только для этого теста

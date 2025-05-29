@@ -1,6 +1,8 @@
+# service/cache.py
 from fastapi_cache import FastAPICache
 from datetime import datetime, timedelta, timezone
 import logging
+from service.config import CACHE_TTL
 
 
 def get_backend():
@@ -32,46 +34,53 @@ def calculate_next_update(last_update_iso: str) -> datetime:
     return next_update.astimezone(timezone.utc)
 
 
-def ttl_logic(data: dict, return_ttl: bool = False) -> int | bool:
+def ttl_logic(
+    data: dict,
+    source: str = "auto",
+    return_ttl: bool = False,
+    fallback_ttl: int | None = None,
+) -> int | bool:
     try:
-        # Извлечение времени с проверкой ключей
-        if (
-            "current_weather" not in data
-            or "moscow_time" not in data["current_weather"]
-        ):
-            raise KeyError("Missing keys in weather data")
+        if source == "auto":
+            if "current_weather" in data:
+                source = "weather"
+            elif isinstance(data, dict) and all(
+                k in data for k in ("id", "url", "width", "height")
+            ):
+                source = "cat"
+            else:
+                raise ValueError("Неизвестный тип данных")
 
-        last_iso = data["current_weather"]["moscow_time"]
-        now_utc = datetime.now(timezone.utc)
+        if source == "weather":
+            now_utc = datetime.now(timezone.utc)
+            minute = (now_utc.minute // 15) * 15
+            interval_start = now_utc.replace(minute=minute, second=0, microsecond=0)
+            interval_end = interval_start + timedelta(minutes=15)
 
-        # Парсинг времени с обработкой возможных форматов
-        try:
-            naive_time = datetime.strptime(last_iso, "%H:%M").time()
-        except ValueError:
-            # Попытка парсить с секундами, если не удалось
-            naive_time = datetime.strptime(last_iso, "%H:%M:%S").time()
+            if return_ttl:
+                # Используем CACHE_TTL если есть, иначе считаем по времени
+                ttl_sec = CACHE_TTL.get(
+                    "weather_cache", int((interval_end - now_utc).total_seconds())
+                )
+                return max(0, int(ttl_sec))
 
-        # Сборка полной даты в UTC+3 (Москва)
-        msk_time = datetime.combine(now_utc.date(), naive_time).replace(
-            tzinfo=timezone(timedelta(hours=3))
-        )
+            return now_utc < interval_end
 
-        # Конвертация в UTC
-        last_update = msk_time.astimezone(timezone.utc)
-
-        # Предполагаемая функция для расчёта следующего обновления
-        next_update = calculate_next_update(last_update.isoformat(timespec="seconds"))
-
-        # Проверка зоны next_update (должна быть в UTC)
-        if next_update.tzinfo is None:
-            next_update = next_update.replace(tzinfo=timezone.utc)
-
-        if return_ttl:
-            ttl_sec = (next_update - now_utc).total_seconds()
-            return max(0, int(ttl_sec))  # Не возвращаем отрицательные значения
-        return now_utc < next_update
+        if source == "cat":
+            if return_ttl:
+                # Используем CACHE_TTL если есть, иначе fallback_ttl или 60
+                return CACHE_TTL.get(
+                    "cat_cache", fallback_ttl if fallback_ttl is not None else 60
+                )
+            return True
 
     except Exception as e:
-        logging.warning(f"TTL error: {e}")
-        # Возвращаем 0 или False в зависимости от режима
-        return 60 if return_ttl else False
+        logging.warning(f"TTL error for {source}: {e}")
+        if return_ttl:
+            # Используем fallback_ttl если есть, иначе значение из CACHE_TTL или 60
+            return (
+                fallback_ttl
+                if fallback_ttl is not None
+                else CACHE_TTL.get("cat_cache", 60)
+            )
+        return False
