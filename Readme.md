@@ -66,12 +66,19 @@ API_Project/
 │   ├── notes.json
 │   ├── quotes.json
 │   ├── quotes_old.json
-├── logging_config.py
 ├── main.py
 ├── Readme.md
 ├── requirements-dev.txt
 ├── requirements.txt
-├── service.py
+├── service/
+│   ├── cache.py
+│   ├── configs.py
+│   ├── decorators.py
+│   ├── service.py
+│   ├── variables.py
+│   ├── version.txt
+│   ├── visits.txt
+│   ├── __init__.py
 ├── static/
 │   ├── cat_fallback.gif
 │   ├── favicon.svg
@@ -89,7 +96,3 @@ API_Project/
 │   ├── test_quotes.py
 │   ├── test_weather.py
 │   ├── __init__.py
-├── update_github_ips.sh
-├── variables.py
-├── version.txt
-├── visits.txt
