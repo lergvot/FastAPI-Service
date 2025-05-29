@@ -1,15 +1,16 @@
 # service/service.py
-import os
 import json
+import os
 import subprocess
 from pathlib import Path
-from typing import List, Dict
+from typing import Dict, List
+
 from service.variables import (
-    VISITS_FILE,
-    VERSION_FILE,
+    BASE_DIR,
     NOTES_FILE,
     QUOTE_FILE,
-    BASE_DIR,
+    VERSION_FILE,
+    VISITS_FILE,
 )
 
 

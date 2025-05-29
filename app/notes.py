@@ -1,12 +1,13 @@
 # app/notes.py
 import logging
-from fastapi import APIRouter
-from fastapi import Form, status
-from fastapi.responses import RedirectResponse
+from typing import Dict, List
 from urllib.parse import urlencode
-from typing import List, Dict
-from service.variables import MAX_NOTES, MAX_NOTE_LENGTH
+
+from fastapi import APIRouter, Form, status
+from fastapi.responses import RedirectResponse
+
 from service.service import load_notes, save_notes
+from service.variables import MAX_NOTE_LENGTH, MAX_NOTES
 
 logging.basicConfig(level=logging.INFO)
 router = APIRouter()

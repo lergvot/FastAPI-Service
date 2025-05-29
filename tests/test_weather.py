@@ -1,18 +1,18 @@
 # tests/test_weather.py
+from datetime import datetime, timezone
+
 import pytest
 import respx
-from datetime import datetime, timedelta, timezone
-from httpx import Response
 from fastapi import status
-from service.variables import WEATHER_FALLBACK, latitude, longitude
-from fastapi_cache import FastAPICache
+from httpx import Response
+
 from app.weather import (
     calculate_next_update,
-    wind_direction_to_text,
-    weather_code_to_text,
     to_moscow_time,
+    weather_code_to_text,
+    wind_direction_to_text,
 )
-
+from service.variables import WEATHER_FALLBACK, latitude, longitude
 
 api_url = f"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current_weather=true"
 mock_data = {

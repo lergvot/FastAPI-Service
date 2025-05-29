@@ -1,13 +1,12 @@
 # tests/conftest.py
+import pytest
 import pytest_asyncio
-from httpx import AsyncClient, ASGITransport
-from main import app
 from asgi_lifespan import LifespanManager
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.inmemory import InMemoryBackend
-import pytest
-import logging
-import sys
+from httpx import ASGITransport, AsyncClient
+
+from main import app
 
 
 @pytest_asyncio.fixture

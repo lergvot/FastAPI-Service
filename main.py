@@ -1,27 +1,28 @@
 # main.py
-import httpx
-import logging
 import asyncio
+import logging
+
+# Проба унификации логирования
+import logging.config
+from contextlib import asynccontextmanager
 from datetime import datetime
+from typing import Any, Dict
+
+import httpx
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.inmemory import InMemoryBackend
-from typing import Dict, Any
-from contextlib import asynccontextmanager
-from service.service import increment_visits, get_version
-from service.variables import BASE_DIR, BASE_URL, CAT_FALLBACK, WEATHER_FALLBACK
-from app.weather import router as weather_router
+
 from app.cat import router as cat_router
-from app.quotes import router as quotes_router
 from app.notes import router as notes_router
-
-
-# Проба унификации логирования
-import logging.config
-from service.config import LOGGING_CONFIG
+from app.quotes import router as quotes_router
+from app.weather import router as weather_router
+from service.configs import LOGGING_CONFIG
+from service.service import get_version, increment_visits
+from service.variables import BASE_DIR, BASE_URL, CAT_FALLBACK, WEATHER_FALLBACK
 
 logging.config.dictConfig(LOGGING_CONFIG)
 

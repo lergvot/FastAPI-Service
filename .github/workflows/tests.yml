@@ -26,5 +26,5 @@ jobs:
 
 
     - name: Run tests
-      run: |
-        pytest -v tests::test_cat.py
+      # run: pytest -v --disable-warnings
+      run: pytest -v tests/test_users.py --disable-warnings

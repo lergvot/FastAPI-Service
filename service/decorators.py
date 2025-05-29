@@ -1,18 +1,11 @@
 # service/decorators.py
-from functools import wraps
-from fastapi import Request
-from typing import Callable, Awaitable, Dict, Any
 import logging
+from functools import wraps
+
+from fastapi import Request
 
 from service.cache import get_cached, set_cached, ttl_logic
-from service.config import CACHE_TTL
-
-# Настройки кэша
-"""CACHE_TTL = {
-    "weather_cache": 900,  # 15 минут
-    "cat_cache": 300,  # 5 минут
-}
-"""
+from service.configs import CACHE_TTL
 
 
 def cached_route(
@@ -21,12 +14,15 @@ def cached_route(
     fallback_data: dict | None = None,
     source: str = "auto",
 ):
+    """
+    Кэширует результат функции на время из CACHE_TTL[cache_key] или ttl.
+    Если кэш устарел — обновляет и выставляет TTL заново.
+    """
+
     def decorator(func):
         @wraps(func)
         async def wrapper(request: Request, *args, **kwargs):
             use_cache = request.query_params.get("nocache") != "true"
-
-            # TTL по умолчанию из CACHE_TTL, если не передан явно
             effective_ttl = ttl if ttl is not None else CACHE_TTL.get(cache_key, 60)
 
             if use_cache:
@@ -42,9 +38,9 @@ def cached_route(
                 logging.warning(f"☑️ Используем fallback [{cache_key}]")
                 return fallback_data or {}
 
-            # Всегда используем effective_ttl из CACHE_TTL или параметра ttl
-            await set_cached(cache_key, result, ttl=effective_ttl)
-            logging.info(f"🔁 Кэш [{cache_key}] обновлён, TTL = {effective_ttl}")
+            ttl_interval = ttl_logic(result, source=source, return_ttl=True)
+            await set_cached(cache_key, result, ttl=ttl_interval)
+            logging.info(f"🔁 Кэш [{cache_key}] обновлён, TTL = {ttl_interval}")
 
             return result
 

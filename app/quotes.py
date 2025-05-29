@@ -1,11 +1,13 @@
 # app/quotes.py
 import json
-import random
 import logging
+import random
+from typing import Dict, List
+
 from fastapi import APIRouter, HTTPException
-from typing import List, Dict
-from service.variables import *
+
 from service.service import *
+from service.variables import *
 
 logging.basicConfig(level=logging.INFO)
 router = APIRouter()

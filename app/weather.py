@@ -1,14 +1,13 @@
 # app/weather.py
-import httpx
 import logging
 from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, HTTPException, Request
+
+import httpx
+from fastapi import APIRouter, Request
 from pydantic import BaseModel
-from typing import Dict, Any
-from fastapi_cache import FastAPICache
-from service.variables import latitude, longitude, WEATHER_FALLBACK
-from service.cache import get_cached, set_cached, ttl_logic
+
 from service.decorators import cached_route
+from service.variables import WEATHER_FALLBACK, latitude, longitude
 
 router = APIRouter()
 

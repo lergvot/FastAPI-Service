@@ -1,11 +1,12 @@
 # app/cat.py
-import httpx
 import logging
-from fastapi import APIRouter
+
+import httpx
+from fastapi import APIRouter, Request
 from pydantic import BaseModel
-from service.variables import CAT_FALLBACK
-from fastapi import Request
+
 from service.decorators import cached_route
+from service.variables import CAT_FALLBACK
 
 router = APIRouter()
 
@@ -49,4 +50,4 @@ async def get_cat() -> CatResponse | None:
 @cached_route("cat_cache", ttl=300, fallback_data={"url": CAT_FALLBACK}, source="cat")
 async def cat(request: Request) -> dict:
     cat = await get_cat()
-    return cat.dict() if cat else {"url": CAT_FALLBACK}
+    return cat.model_dump() if cat else {"url": CAT_FALLBACK}
