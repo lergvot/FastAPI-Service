@@ -25,13 +25,18 @@ async def client():
 def log_separator(request):
     """Добавляет разделители вокруг тестов и управляет уровнем логирования"""
     # Начало теста
-    print(f"\n{'-'*80}")
-    print(f"Начало теста: {request.node.name}")
-    print(f"{'-'*80}")
+    print(f"\n")
 
     yield
-
-    # Конец теста
     print(f"\n{'-'*80}")
-    print(f"Окончание теста: {request.node.name}")
-    print(f"{'-'*80}\n")
+
+
+# Хук для декодирования кириллицы в id параметров тестов
+def pytest_itemcollected(item):
+    """Декодирует кириллические id параметров тестов"""
+    if "[" in item.name and "\\u" in item.name:
+        try:
+            decoded = item.name.encode().decode("unicode_escape")
+            item._nodeid = decoded
+        except Exception:
+            pass  # Не мешаем сборке, если что-то пойдет не так

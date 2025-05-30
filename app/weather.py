@@ -140,4 +140,4 @@ async def weather(request: Request) -> dict:
     weather_data = await fetch_weather()
     if weather_data is None:
         return WEATHER_FALLBACK
-    return weather_data.dict()
+    return weather_data.model_dump()
