@@ -24,9 +24,7 @@ async def client():
 @pytest.fixture(autouse=True)
 def log_separator(request):
     """Добавляет разделители вокруг тестов и управляет уровнем логирования"""
-    # Начало теста
     print(f"\n")
-
     yield
     print(f"\n{'-'*80}")
 

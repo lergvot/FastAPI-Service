@@ -6,11 +6,7 @@ import respx
 from fastapi import status
 from httpx import Response
 
-from app.weather import (
-    to_moscow_time,
-    weather_code_to_text,
-    wind_direction_to_text,
-)
+from app.weather import to_moscow_time, weather_code_to_text, wind_direction_to_text
 from service.variables import WEATHER_FALLBACK, latitude, longitude
 
 api_url = f"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current_weather=true"
@@ -58,15 +54,13 @@ def freeze_time(monkeypatch):
 @respx.mock
 @pytest.mark.asyncio
 async def test_get_weather_success(client):
-
     # Мокаем API-запрос
-
     respx.get(api_url).mock(return_value=Response(200, json=mock_data))
-
     response = await client.get("api/weather?nocache=true")
 
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
+
     assert data["current_weather"]["wind_direction"] == "Южный"
     assert data["current_weather"]["moscow_time"] == "15:00"
 
@@ -75,7 +69,6 @@ async def test_get_weather_success(client):
 @respx.mock
 @pytest.mark.asyncio
 async def test_weather_caching(client):
-
     mock = respx.get(api_url).mock(
         return_value=Response(
             200,
@@ -107,9 +100,7 @@ async def test_weather_fallback(client):
 @pytest.mark.asyncio
 async def test_weather_api_no_current_weather(client):
     broken_mock_data = {k: v for k, v in mock_data.items() if k != "current_weather"}
-
     respx.get(api_url).mock(return_value=Response(200, json=broken_mock_data))
-
     response = await client.get("api/weather?nocache=true")
     assert response.status_code == 200
     assert response.json() == WEATHER_FALLBACK

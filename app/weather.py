@@ -1,6 +1,7 @@
 # app/weather.py
 import logging
 from datetime import datetime, timedelta, timezone
+from venv import logger
 
 import httpx
 from fastapi import APIRouter, Request
@@ -9,6 +10,7 @@ from pydantic import BaseModel
 from service.decorators import cached_route
 from service.variables import WEATHER_FALLBACK, latitude, longitude
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -124,20 +126,18 @@ async def fetch_weather() -> WeatherResponse | None:
                 current_weather=CurrentWeather(**processed_weather),
             )
     except httpx.HTTPStatusError as e:
-        logging.error(f"Ошибка API: {e}")
+        logger.error(f"Ошибка API: {e}")
         return None
     except Exception as e:
-        logging.error(f"Ошибка при получении погоды: {e}")
+        logger.error(f"Ошибка при получении погоды: {e}")
         return None
 
 
 @router.get("/weather", tags=["Weather"])
 @router.get("/weather?nocache=true", tags=["Service"])
-@cached_route(
-    "weather_cache", ttl=900, fallback_data=WEATHER_FALLBACK, source="weather"
-)
+@cached_route("weather_cache", ttl=10, fallback_data=WEATHER_FALLBACK, source="weather")
 async def weather(request: Request) -> dict:
     weather_data = await fetch_weather()
     if weather_data is None:
-        return WEATHER_FALLBACK
+        return {"url": WEATHER_FALLBACK, "fallback": True}
     return weather_data.model_dump()
