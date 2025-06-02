@@ -1,3 +1,4 @@
+# delpoy.yml
 name: Deploy App
 
 on:
@@ -61,6 +62,7 @@ jobs:
             git clean -fd
             git pull origin main --force
             source venv/bin/activate
+            python -m pip install --upgrade pip
             pip install -r requirements.txt --no-cache-dir
             echo "0" > visits.txt
             sudo systemctl restart fastapi.service

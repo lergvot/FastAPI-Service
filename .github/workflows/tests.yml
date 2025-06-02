@@ -1,3 +1,4 @@
+# tests.yml
 name: Run Tests
 
 on:
@@ -24,7 +25,6 @@ jobs:
         pip install -r requirements.txt
         pip install -r requirements-dev.txt
 
-
     - name: Run tests
-      # run: pytest -v --disable-warnings
-      run: pytest -v tests/test_cat.py --disable-warnings
+      # run: pytest -v tests --disable-warnings
+      run: pytest -v tests/test_cat.py tests/test_weather.py--disable-warnings
