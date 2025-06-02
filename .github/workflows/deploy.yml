@@ -28,7 +28,7 @@ jobs:
 
       - name: Run tests
         # run: pytest -v --disable-warnings
-        run: pytest -v tests/test_cat.py --disable-warnings
+        run: pytest -v tests/test_cat.py tests/test_weather.py --disable-warnings
 
   deploy:
     name: Deploy to Server

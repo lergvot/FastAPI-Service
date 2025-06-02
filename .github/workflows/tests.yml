@@ -27,4 +27,4 @@ jobs:
 
     - name: Run tests
       # run: pytest -v tests --disable-warnings
-      run: pytest -v tests/test_cat.py tests/test_weather.py--disable-warnings
+      run: pytest -v tests/test_cat.py tests/test_weather.py --disable-warnings
