@@ -57,7 +57,7 @@ jobs:
           username: root
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd /opt/fastapi-app
+            cd /opt/FastAPI-Service
             git reset --hard HEAD
             git clean -fd
             git pull origin main --force
@@ -67,3 +67,19 @@ jobs:
             echo "0" > visits.txt
             sudo systemctl restart fastapi.service
             echo "Deployment completed"
+
+      - name: Send CI Report to Telegram Bot
+        env:
+          CI_ENDPOINT: ${{ secrets.CI_ENDPOINT }}
+          SECRET: ${{ secrets.CI_SECRET }}
+        run: |
+          curl -X POST "$CI_ENDPOINT" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "secret": "'"$SECRET"'",
+              "project": "Telegram Bot",
+              "status": "✅ Успешно",
+              "commit": "'"$(git rev-parse --short HEAD)"'",
+              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "repo_url": "https://github.com/${{ github.repository }}"
+            }'

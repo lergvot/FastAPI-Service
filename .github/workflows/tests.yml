@@ -26,5 +26,27 @@ jobs:
         pip install -r requirements-dev.txt
 
     - name: Run tests
+      id: pytest_step
       # run: pytest -v tests --disable-warnings
       run: pytest -v tests/test_cat.py tests/test_weather.py --disable-warnings
+    
+    - name: Send CI Report to Telegram Bot
+      if: always()  # <--- гарантируем выполнение даже если тесты упали
+      env:
+        CI_ENDPOINT: ${{ secrets.CI_ENDPOINT }}
+        SECRET: ${{ secrets.CI_SECRET }}
+      run: |
+        STATUS="✅ Тесты пройдены"
+        if [ "${{ steps.pytest_step.outcome }}" != "success" ]; then
+          STATUS="❌ Тесты не пройдены"
+        fi
+        curl -X POST "$CI_ENDPOINT" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "secret": "'"$SECRET"'",
+            "project": "Telegram Bot",
+            "status": "'"$STATUS"'",
+            "commit": "'"$(git rev-parse --short HEAD)"'",
+            "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+            "repo_url": "https://github.com/${{ github.repository }}"
+          }'
