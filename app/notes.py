@@ -9,7 +9,7 @@ from fastapi.responses import RedirectResponse
 from service.service import load_notes, save_notes
 from service.variables import MAX_NOTE_LENGTH, MAX_NOTES
 
-logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 

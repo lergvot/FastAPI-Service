@@ -1,3 +1,4 @@
+# tests.yml
 name: Run Tests
 
 on:
@@ -16,7 +17,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.10.10"
+        python-version: "3.13.3"
 
     - name: Install dependencies
       run: |
@@ -24,7 +25,28 @@ jobs:
         pip install -r requirements.txt
         pip install -r requirements-dev.txt
 
-
     - name: Run tests
-      # run: pytest -v --disable-warnings
-      run: pytest -v tests/test_cat.py --disable-warnings
+      id: pytest_step
+      # run: pytest -v tests --disable-warnings
+      run: pytest -v tests/test_cat.py tests/test_weather.py --disable-warnings
+    
+    - name: Send CI Report to Telegram Bot
+      if: always()  # <--- гарантируем выполнение даже если тесты упали
+      env:
+        CI_ENDPOINT: ${{ secrets.CI_ENDPOINT }}
+        SECRET: ${{ secrets.CI_SECRET }}
+      run: |
+        STATUS="✅ Тесты пройдены"
+        if [ "${{ steps.pytest_step.outcome }}" != "success" ]; then
+          STATUS="❌ Тесты не пройдены"
+        fi
+        curl -X POST "$CI_ENDPOINT" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "secret": "'"$SECRET"'",
+            "project": "Telegram Bot",
+            "status": "'"$STATUS"'",
+            "commit": "'"$(git rev-parse --short HEAD)"'",
+            "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+            "repo_url": "https://github.com/${{ github.repository }}"
+          }'

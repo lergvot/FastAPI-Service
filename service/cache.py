@@ -4,7 +4,9 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi_cache import FastAPICache
 
-from service.configs import CACHE_TTL
+from service.config import CACHE_TTL
+
+logger = logging.getLogger(__name__)
 
 
 def get_backend():
@@ -63,7 +65,7 @@ def ttl_logic(
         return now_utc < interval_end
 
     except Exception as e:
-        logging.warning(f"TTL error for {source}: {e}")
+        logger.warning(f"TTL error for {source}: {e}")
         if return_ttl:
             return 60
         return False

@@ -1,3 +1,4 @@
+# delpoy.yml
 name: Deploy App
 
 on:
@@ -17,7 +18,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10.10'
+          python-version: '3.13.3'
 
       - name: Install dependencies
         run: |
@@ -27,7 +28,7 @@ jobs:
 
       - name: Run tests
         # run: pytest -v --disable-warnings
-        run: pytest -v tests/test_cat.py --disable-warnings
+        run: pytest -v tests/test_cat.py tests/test_weather.py --disable-warnings
 
   deploy:
     name: Deploy to Server
@@ -41,7 +42,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10.10'
+          python-version: '3.13.3'
 
       - name: Install dependencies
         run: |
@@ -51,17 +52,34 @@ jobs:
       - name: Deploy to server
         uses: appleboy/ssh-action@master
         with:
-          host: 104.164.54.139
-          port: 33
+          host: ${{ secrets.HOST }}
+          port: ${{ secrets.PORT }}
           username: root
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd /opt/fastapi-app
+            cd /opt/FastAPI-Service
             git reset --hard HEAD
             git clean -fd
             git pull origin main --force
             source venv/bin/activate
+            python -m pip install --upgrade pip
             pip install -r requirements.txt --no-cache-dir
             echo "0" > visits.txt
             sudo systemctl restart fastapi.service
             echo "Deployment completed"
+
+      - name: Send CI Report to Telegram Bot
+        env:
+          CI_ENDPOINT: ${{ secrets.CI_ENDPOINT }}
+          SECRET: ${{ secrets.CI_SECRET }}
+        run: |
+          curl -X POST "$CI_ENDPOINT" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "secret": "'"$SECRET"'",
+              "project": "Telegram Bot",
+              "status": "✅ Успешно",
+              "commit": "'"$(git rev-parse --short HEAD)"'",
+              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "repo_url": "https://github.com/${{ github.repository }}"
+            }'

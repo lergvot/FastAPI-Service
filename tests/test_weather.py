@@ -6,12 +6,7 @@ import respx
 from fastapi import status
 from httpx import Response
 
-from app.weather import (
-    calculate_next_update,
-    to_moscow_time,
-    weather_code_to_text,
-    wind_direction_to_text,
-)
+from app.weather import to_moscow_time, weather_code_to_text, wind_direction_to_text
 from service.variables import WEATHER_FALLBACK, latitude, longitude
 
 api_url = f"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current_weather=true"
@@ -59,15 +54,13 @@ def freeze_time(monkeypatch):
 @respx.mock
 @pytest.mark.asyncio
 async def test_get_weather_success(client):
-
     # Мокаем API-запрос
-
     respx.get(api_url).mock(return_value=Response(200, json=mock_data))
-
     response = await client.get("api/weather?nocache=true")
 
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
+
     assert data["current_weather"]["wind_direction"] == "Южный"
     assert data["current_weather"]["moscow_time"] == "15:00"
 
@@ -76,39 +69,44 @@ async def test_get_weather_success(client):
 @respx.mock
 @pytest.mark.asyncio
 async def test_weather_caching(client):
-
     mock = respx.get(api_url).mock(
         return_value=Response(
             200,
             json=mock_data,
         )
     )
-
-    # Первый вызов - должен попасть в API
     await client.get("api/weather?nocache=true")
-    assert mock.call_count == 1, "Вызов API без кэша"  # = 1
+    assert mock.call_count == 1, "Вызов API без кэша"
 
-    # Второй вызов - должен использовать кэш (вызывать API не должен)
     await client.get("api/weather")
     assert (
         mock.call_count == 1
-    ), f"Второй вызов должен использовать кэш {mock.call_count}"  # тест падает, т.к. mock.call_count = 2
+    ), f"Второй вызов должен использовать кэш {mock.call_count}"
 
 
 # 3. Тест отработки заглушки при отсутствии данных в кэше
 @respx.mock
 @pytest.mark.asyncio
 async def test_weather_fallback(client):
-    """Тест отработки заглушки при ошибке API"""
-    api_url = f"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current_weather=true"
     respx.get(api_url).mock(return_value=Response(500))
 
-    response = await client.get("api/weather")
+    response = await client.get("api/weather?nocache=true")
     assert response.status_code == 200
-    assert response.json() == WEATHER_FALLBACK.dict()
+    assert response.json() == WEATHER_FALLBACK
 
 
-# 4. Тест конвертации градусов ветра в текстовое описание
+# 4. Тест обработки случая, когда текущая погода отсутствует в ответе API
+@respx.mock
+@pytest.mark.asyncio
+async def test_weather_api_no_current_weather(client):
+    broken_mock_data = {k: v for k, v in mock_data.items() if k != "current_weather"}
+    respx.get(api_url).mock(return_value=Response(200, json=broken_mock_data))
+    response = await client.get("api/weather?nocache=true")
+    assert response.status_code == 200
+    assert response.json() == WEATHER_FALLBACK
+
+
+# 5. Тест конвертации градусов ветра в текстовое описание
 @pytest.mark.parametrize(
     "degrees, expected",
     [
@@ -129,7 +127,7 @@ def test_wind_direction_conversion(degrees, expected):
     assert wind_direction_to_text(degrees) == expected
 
 
-# 5. Тест конвертации кода погоды в текстовое описание
+# 6. Тест конвертации кода погоды в текстовое описание
 @pytest.mark.parametrize(
     "code, expected",
     [
@@ -142,12 +140,6 @@ def test_weather_code_conversion(code, expected):
     assert weather_code_to_text(code) == expected
 
 
-# 6. Тест конвертации времени в московское время
+# 7. Тест конвертации времени в московское время
 def test_moscow_time_conversion():
     assert to_moscow_time("2024-01-01T09:00+00:00") == "12:00"
-
-
-# 7. Тест расчета следующего обновления
-def test_next_update_calculation():
-    next_update = calculate_next_update("2024-01-01T10:00Z")
-    assert next_update == datetime(2024, 1, 1, 10, 15, tzinfo=timezone.utc)

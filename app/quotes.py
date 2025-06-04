@@ -9,7 +9,7 @@ from fastapi import APIRouter, HTTPException
 from service.service import *
 from service.variables import *
 
-logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # Загрузка цитат при старте

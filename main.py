@@ -20,7 +20,7 @@ from app.cat import router as cat_router
 from app.notes import router as notes_router
 from app.quotes import router as quotes_router
 from app.weather import router as weather_router
-from service.configs import LOGGING_CONFIG
+from service.config import LOGGING_CONFIG
 from service.service import get_version, increment_visits
 from service.variables import BASE_DIR, BASE_URL, CAT_FALLBACK, WEATHER_FALLBACK
 
@@ -31,10 +31,9 @@ logging.config.dictConfig(LOGGING_CONFIG)
 async def lifespan(app: FastAPI):
     # Инициализация кеша
     FastAPICache.init(InMemoryBackend())
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    logging.info(f"🟢 Приложение запущено {now}")
+    logging.info(f"🟢 Приложение запущено")
     yield
-    logging.info(f"🔴 Приложение остановлено")
+    # logging.info(f"🔴 Приложение остановлено")
     # Очистка ресурсов
     backend = FastAPICache.get_backend()
     if hasattr(backend, "close"):
