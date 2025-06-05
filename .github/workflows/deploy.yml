@@ -1,5 +1,5 @@
 # delpoy.yml
-name: Deploy App
+name: Deploy FastAPI-Service
 
 on:
   push:
@@ -58,28 +58,59 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /opt/FastAPI-Service
-            git reset --hard HEAD
-            git clean -fd
-            git pull origin main --force
+
+            # Остановка сервиса и очистка логов
+            systemctl stop fastapi.service || true
+            [ -f fastapi_service.log ] && rm fastapi_service.log
+            
+            # Синхронизация последних изменений
+            git fetch origin main --depth=1
+            git reset --hard FETCH_HEAD
+            
+            # Обновление зависимостей
             source venv/bin/activate
             python -m pip install --upgrade pip
             pip install -r requirements.txt --no-cache-dir
+            
+            # Запуск сервиса
             echo "0" > visits.txt
-            sudo systemctl restart fastapi.service
-            echo "Deployment completed"
+            systemctl start fastapi.service
+            echo "✅ Deployment completed"
+
+      - name: Set CI status env
+        run: echo "STATUS=✅ Успешно" >> $GITHUB_ENV
+
+      - name: Prepare CI payload
+        id: prepare_payload
+        run: |
+          echo "Создаём JSON для CI-репорта"
+          echo '{
+            "secret": "'"${{ secrets.CI_SECRET }}"'",
+            "project": "'"${{ github.repository }}"'",
+            "status": "'"$STATUS"'",
+            "commit": "'"$(git rev-parse --short HEAD)"'",
+            "author": "'"${{ github.actor }}"'",
+            "branch": "'"${{ github.ref_name }}"'",
+            "workflow": "'"${{ github.workflow }}"'",
+            "event_name": "'"${{ github.event_name }}"'",
+            "message": "'"${{ github.event.head_commit.message }}"'",
+            "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+            "repo_url": "https://github.com/${{ github.repository }}"
+          }' > ci_payload.json
+          echo "payload_file=ci_payload.json" >> $GITHUB_OUTPUT
 
       - name: Send CI Report to Telegram Bot
         env:
           CI_ENDPOINT: ${{ secrets.CI_ENDPOINT }}
-          SECRET: ${{ secrets.CI_SECRET }}
         run: |
-          curl -X POST "$CI_ENDPOINT" \
+          echo "📡 Отправляем CI-отчёт..."
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$CI_ENDPOINT" \
             -H "Content-Type: application/json" \
-            -d '{
-              "secret": "'"$SECRET"'",
-              "project": "Telegram Bot",
-              "status": "✅ Успешно",
-              "commit": "'"$(git rev-parse --short HEAD)"'",
-              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-              "repo_url": "https://github.com/${{ github.repository }}"
-            }'
+            -d @"${{ steps.prepare_payload.outputs.payload_file }}")
+
+          if [[ "$HTTP_CODE" -ne 200 ]]; then
+            echo "::warning::CI report failed with HTTP $HTTP_CODE"
+            exit 1
+          else
+            echo "✅ CI-отчёт успешно отправлен. Код ответа: $HTTP_CODE"
+          fi

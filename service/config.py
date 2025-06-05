@@ -13,6 +13,10 @@ LOGGING_CONFIG = {
             "format": "[%(asctime)s] [%(name)-20s] %(message)s",
             "datefmt": "%H:%M:%S",
         },
+        "file": {
+            "format": "[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+        },
     },
     "handlers": {
         "rich": {
@@ -22,11 +26,18 @@ LOGGING_CONFIG = {
             "show_time": False,  # Не показывать время (выводится в форматтере)
             "show_path": False,  # Скрыть путь к файлу
             "markup": True,  # Разрешить разметку в сообщениях
-        }
+        },
+        "file": {
+            "class": "logging.FileHandler",
+            "formatter": "file",
+            "filename": "fastapi_service.log",
+            "encoding": "utf-8",
+            "mode": "a",  # append (по умолчанию)
+        },
     },
     "root": {
         "level": "INFO",  # Уровень логирования для всех логгеров
-        "handlers": ["rich"],  # Обработчики для корневого логгера
+        "handlers": ["rich", "file"],  # Обработчики для корневого логгера
     },
     "loggers": {
         "uvicorn.error": {"handlers": ["rich"], "level": "INFO", "propagate": False},
