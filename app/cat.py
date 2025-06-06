@@ -1,5 +1,4 @@
 # app/cat.py
-
 import logging
 
 import httpx

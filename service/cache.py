@@ -26,15 +26,21 @@ async def set_cached(key: str, value: dict, ttl: int):
     await backend.set(key, value, expire=ttl)
 
 
+async def delete_cached(key: str):
+    backend = get_backend()
+    if hasattr(backend, "clear"):
+        await backend.clear(key)
+    else:
+        # fallback: перезаписываем ключ пустым значением с минимальным TTL
+        await backend.set(key, None, expire=1)
+
+
 def ttl_logic(
     data: dict,
     source: str = "auto",
     return_ttl: bool = False,
 ) -> int | bool:
-    """
-    Для любого source возвращает True если кэш валиден (до конца текущего интервала),
-    либо TTL до конца интервала (интервал задаётся через CACHE_TTL в секундах, если return_ttl=True).
-    """
+
     try:
         # Определяем ключ для CACHE_TTL
         if source == "auto":

@@ -1,9 +1,10 @@
 # service/service.py
 import json
+import logging
 import os
 import subprocess
 from pathlib import Path
-from typing import Dict, List
+from typing import List, Optional
 
 from service.variables import (
     BASE_DIR,
@@ -12,6 +13,8 @@ from service.variables import (
     VERSION_FILE,
     VISITS_FILE,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def get_visits() -> int:
@@ -68,31 +71,66 @@ def get_version() -> str:
         return f"v{version} ({env} {git_hash})"
 
 
-# Загрузка данных при старте
-def load_json_file(file_path: Path) -> List[Dict]:
-    """Загружает JSON-файл, возвращает пустой список при ошибке"""
-    if file_path.exists():
-        try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except (json.JSONDecodeError, OSError):
+class JsonStorage:
+    def __init__(self, file_path: Path, mutable: bool = False):
+        self.file_path = file_path
+        self.mutable = mutable
+        self._cache: Optional[List] = None
+
+    def _load_file(self) -> List:
+        if not self.file_path.exists():
+            logger.warning(f"Файл не найден: {self.file_path}")
             return []
-    return []
+
+        try:
+            with open(self.file_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if isinstance(data, list):
+                    logger.debug(f"Загружено {len(data)} элементов из {self.file_path}")
+                    return data
+        except (json.JSONDecodeError, OSError) as e:
+            logger.warning(f"Ошибка загрузки {self.file_path}: {e}")
+
+        return []
+
+    def _save_file(self, data: List) -> None:
+        if not self.mutable:
+            raise RuntimeError(f"Хранилище {self.file_path} только для чтения")
+
+        try:
+            with open(self.file_path, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+                logger.debug(f"Сохранено {len(data)} элементов в {self.file_path}")
+        except Exception as e:
+            logger.error(f"Ошибка сохранения в {self.file_path}: {e}")
+
+    def get_all(self, force_refresh: bool = False) -> List:
+        if self._cache is None or force_refresh:
+            self._cache = self._load_file()
+        return self._cache.copy()
+
+    def add(self, item: str) -> None:
+        if not self.mutable:
+            raise RuntimeError("Доступ только для чтения")
+
+        items = self.get_all()
+        items.append(item)
+        self._cache = items
+        self._save_file(items)
+
+    def delete(self, index: int) -> None:
+        if not self.mutable:
+            raise RuntimeError("Доступ только для чтения")
+
+        items = self.get_all()
+        if 0 <= index < len(items):
+            items.pop(index)
+            self._cache = items
+            self._save_file(items)
+
+    def clear_cache(self) -> None:
+        self._cache = None
 
 
-notes = load_json_file(NOTES_FILE)
-quotes = load_json_file(QUOTE_FILE)
-
-
-def load_notes() -> List[str]:
-    """Загружает заметки"""
-    return load_json_file(NOTES_FILE)
-
-
-def save_notes(notes: List[str]) -> None:
-    """Сохраняет заметки"""
-    try:
-        with open(NOTES_FILE, "w", encoding="utf-8") as f:
-            json.dump(notes, f, ensure_ascii=False, indent=2)
-    except Exception:
-        pass
+notes_storage = JsonStorage(NOTES_FILE, mutable=True)
+quotes_storage = JsonStorage(QUOTE_FILE, mutable=False)
