@@ -1,87 +1,65 @@
 # app/quotes.py
-import json
 import logging
 import random
 from typing import Dict, List
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
-from service.service import *
-from service.variables import *
+from service.decorators import cached_route, log_route
+from service.service import quotes_storage
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-# Загрузка цитат при старте
-quotes: List[Dict] = load_json_file(QUOTE_FILE)
-
 
 @router.get("/quotes", tags=["Quotes"])
-async def get_quotes() -> Dict[str, List[Dict]]:
-    """Получение всех цитат"""
-    if not QUOTE_FILE.exists():
-        raise HTTPException(status_code=404, detail="Файл с цитатами не найден.")
-
-    try:
-        with open(QUOTE_FILE, "r", encoding="utf-8") as f:
-            quotes = json.load(f)
-            if quotes:
-                return {"quotes": quotes}
-            else:
-                raise HTTPException(status_code=404, detail="No quotes available.")
-    except (json.JSONDecodeError, OSError):
-        raise HTTPException(status_code=500, detail="Ошибка чтения файла с цитатами")
+@router.get("/cat?nocache=true", tags=["Service"])
+@cached_route("quotes")
+@log_route("/quotes")
+async def get_quotes(request: Request) -> Dict[str, List[Dict]]:
+    force = request.query_params.get("nocache") == "true"
+    quotes = quotes_storage.get_all(force_refresh=force)
+    if not quotes:
+        raise HTTPException(status_code=404, detail="Цитаты не найдены.")
+    return {"quotes": quotes}
 
 
 @router.get("/quotes/random", tags=["Quotes"])
-async def get_random_quote() -> Dict:
-    """Получение случайной цитаты"""
-    if not QUOTE_FILE.exists():
-        raise HTTPException(status_code=404, detail="Файл с цитатами не найден.")
-
-    try:
-        with open(QUOTE_FILE, "r", encoding="utf-8") as f:
-            quotes = json.load(f)
-            if quotes:
-                return random.choice(quotes)
-    except (json.JSONDecodeError, OSError):
-        pass
-
-    raise HTTPException(status_code=404, detail="No quotes available.")
+@router.get("/quotes/random?nocache=true", tags=["Service"])
+@cached_route("quotes_random")
+@log_route("/quotes/random")
+async def get_random_quote(request: Request) -> Dict:
+    force = request.query_params.get("nocache") == "true"
+    quotes = quotes_storage.get_all(force_refresh=force)
+    if quotes:
+        return random.choice(quotes)
+    raise HTTPException(status_code=404, detail="Цитаты не найдены.")
 
 
 @router.get("/quotes/search", tags=["Quotes"])
-async def search_quote(author: str = "") -> Dict[str, List[Dict]]:
-    """Поиск цитат по автору"""
-    if not QUOTE_FILE.exists():
-        raise HTTPException(status_code=404, detail="Файл с цитатами не найден.")
-
-    try:
-        with open(QUOTE_FILE, "r", encoding="utf-8") as f:
-            quotes = json.load(f)
-            results = [
-                q for q in quotes if author.lower() in q.get("Author", "").lower()
-            ]
-            if results:
-                return {"quotes": results}
-    except (json.JSONDecodeError, OSError):
-        pass
-
+@router.get("/quotes/search?nocache=true", tags=["Service"])
+@cached_route(
+    lambda request, *a, **k: f"quotes_search_{request.query_params.get('author', '').lower()}"
+)
+@log_route("/quotes/search")
+async def search_quote(
+    author: str = "", request: Request = None
+) -> Dict[str, List[Dict]]:
+    force = request.query_params.get("nocache") == "true" if request else False
+    quotes = quotes_storage.get_all(force_refresh=force)
+    results = [q for q in quotes if author.lower() in q.get("Author", "").lower()]
+    if results:
+        return {"quotes": results}
     raise HTTPException(status_code=404, detail="Цитаты не найдены.")
 
 
 @router.get("/quotes/{quote_id}", tags=["Quotes"])
-async def get_quote_by_id(quote_id: int) -> Dict[str, Dict]:
-    """Получение цитаты по ID"""
-    if not QUOTE_FILE.exists():
-        raise HTTPException(status_code=404, detail="Файл с цитатами не найден.")
-
-    try:
-        with open(QUOTE_FILE, "r", encoding="utf-8") as f:
-            quotes = json.load(f)
-            if 0 <= quote_id < len(quotes):
-                return {"quote": quotes[quote_id]}
-    except (json.JSONDecodeError, OSError):
-        pass
-
+@router.get("/quotes/{quote_id}?nocache=true", tags=["Service"])
+@cached_route(lambda request, quote_id, *a, **k: f"quote_{quote_id}")
+@log_route("/quotes/{quote_id}")
+async def get_quote_by_id(quote_id: int, request: Request) -> Dict[str, Dict]:
+    force = request.query_params.get("nocache") == "true"
+    quotes = quotes_storage.get_all(force_refresh=force)
+    if 0 <= quote_id < len(quotes):
+        return {"quote": quotes[quote_id]}
     raise HTTPException(status_code=404, detail="Цитата не найдена.")

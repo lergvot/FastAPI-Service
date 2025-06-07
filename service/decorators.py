@@ -1,5 +1,6 @@
 # service/decorators.py
 import logging
+import time
 from functools import wraps
 
 from fastapi import Request
@@ -48,6 +49,33 @@ def cached_route(
             logger.info(f"🔁 Кэш {cache_key} обновлён, TTL = {ttl_interval}")
 
             return result
+
+        return wrapper
+
+    return decorator
+
+
+def log_route(name: str = ""):
+    """
+    Универсальный лог-декоратор для FastAPI-роутов.
+    Логирует имя маршрута, параметры и время выполнения.
+    """
+
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(request: Request, *args, **kwargs):
+            route_name = name or request.url.path
+            start_time = time.perf_counter()
+
+            try:
+                response = await func(request, *args, **kwargs)
+                duration = round((time.perf_counter() - start_time) * 1000, 2)
+                logger.info(f"📥 {route_name} | {request.method} | {request.url}")
+                logger.info(f"📤 {route_name} | Ответ за {duration}мс")
+                return response
+            except Exception as e:
+                logger.exception(f"❌ Ошибка в маршруте {route_name}: {e}")
+                raise
 
         return wrapper
 

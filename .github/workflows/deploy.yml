@@ -2,14 +2,11 @@
 name: Deploy FastAPI-Service
 
 on:
-  workflow_run:
-    workflows: ["Run Tests"]
-    types:
-      - completed
+  push:
+    branches: [main]
 
 jobs:
   deploy:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     name: Deploy to Server
     runs-on: ubuntu-latest
 
