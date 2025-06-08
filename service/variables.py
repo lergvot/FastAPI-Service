@@ -20,7 +20,12 @@ latitude = 55.75
 longitude = 37.62
 
 # Заглушка кота
-CAT_FALLBACK = "/static/cat_fallback.gif"
+CAT_FALLBACK = {
+    "id": "000",
+    "url": "/static/cat_fallback.gif",
+    "width": 478,
+    "height": 241,
+}
 
 # Путь к файлу с версиями
 VERSION_FILE = SERVICE_DIR / "version.txt"

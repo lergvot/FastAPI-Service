@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
     <meta charset="UTF-8">
     <title>Личный дашборд FastAPI</title>
@@ -12,26 +13,26 @@
     <!-- Roboto Font -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
     <script>
-        window.addEventListener('DOMContentLoaded', function() {
-        const tooltip = document.getElementById('note-error-tooltip');
-        const btn = document.getElementById('add-note-btn');
-        if (tooltip && btn) {
-            // Позиционируем тултип над кнопкой
-            const btnRect = btn.getBoundingClientRect();
-            tooltip.style.top = (btnRect.bottom + window.scrollY + 8) + 'px';
-            tooltip.style.left = (btnRect.left + btnRect.width/2 + window.scrollX) + 'px';
-            tooltip.style.transform = 'translateX(-50%)';
+        window.addEventListener('DOMContentLoaded', function () {
+            const tooltip = document.getElementById('note-error-tooltip');
+            const btn = document.getElementById('add-note-btn');
+            if (tooltip && btn) {
+                // Позиционируем тултип над кнопкой
+                const btnRect = btn.getBoundingClientRect();
+                tooltip.style.top = (btnRect.bottom + window.scrollY + 8) + 'px';
+                tooltip.style.left = (btnRect.left + btnRect.width / 2 + window.scrollX) + 'px';
+                tooltip.style.transform = 'translateX(-50%)';
 
-            // Скрываем тултип через 3 секунды
-            setTimeout(() => {
-                tooltip.style.display = 'none';
-                // Удаляем error из URL, чтобы не показывать снова при обновлении
-                const url = new URL(window.location);
-                url.searchParams.delete('error');
-                window.history.replaceState({}, document.title, url.pathname + url.search);
-            }, 3000);
-        }
-    });
+                // Скрываем тултип через 3 секунды
+                setTimeout(() => {
+                    tooltip.style.display = 'none';
+                    // Удаляем error из URL, чтобы не показывать снова при обновлении
+                    const url = new URL(window.location);
+                    url.searchParams.delete('error');
+                    window.history.replaceState({}, document.title, url.pathname + url.search);
+                }, 3000);
+            }
+        });
     </script>
 </head>
 
@@ -43,11 +44,11 @@
                     <span class="material-icons">format_quote</span>
                 </div>
                 <div>
-                    <span>{{ quotes['text'] }}</span>
+                    <span>{{ quotes.quotes['text'] }}</span>
                 </div>
             </div>
             <div class="quote-author">
-                <span>{{ quotes['author'] }}</span>
+                <span>{{ quotes.quotes['author'] }}</span>
             </div>
         </div>
         {% if weather %}
@@ -78,7 +79,7 @@
 
     <div class="dashboard-container">
         <div class="cat">
-            <img src="{{ cat['url'] }}" alt="Котик" class="cat-image" width=auto height=auto>
+            <img src="{{ cat.cat.url }}" alt="Котик" class="cat-image">
         </div>
         <div class="dashboard-notes">
             <h1>Мои заметки</h1>
@@ -89,17 +90,18 @@
                 </button>
             </form>
             {% if error %}
-                <div id="note-error-tooltip" class="tooltip-visible">
-                    <span class="material-icons">error_outline</span>
-                    {{ error | e }}
-                </div>
+            <div id="note-error-tooltip" class="tooltip-visible">
+                <span class="material-icons">error_outline</span>
+                {{ error | e }}
+            </div>
             {% endif %}
             <ul class="notes">
                 {% for note in notes %}
                 <li>
                     <span>{{ note }}</span>
                     <form action="/api/notes/delete/{{ loop.index0 }}" method="post" style="display:inline;">
-                        <button type="submit" title="Удалить" style="background:none; border:none; padding:0; cursor:pointer;">
+                        <button type="submit" title="Удалить"
+                            style="background:none; border:none; padding:0; cursor:pointer;">
                             <span class="material-icons">delete</span>
                         </button>
                     </form>
@@ -117,4 +119,5 @@
         <p>Посещений: {{ visits }}</p>
     </footer>
 </body>
+
 </html>

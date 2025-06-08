@@ -27,13 +27,11 @@ jobs:
 
     - name: Run tests with coverage
       id: pytest_step
-      # run: pytest -v tests --disable-warnings
-      # run: pytest -v tests/test_cat.py tests/test_weather.py --disable-warnings
-      run: coverage run -m pytest -v tests/test_cat.py tests/test_weather.py --disable-warnings
+      run: coverage run -m pytest -v tests --disable-warnings
 
     - name: Generate coverage report
       run: |
-        coverage report -m  # Краткий отчёт с пропущенными строками
+        coverage report -m
         echo "Total coverage: $(coverage report | tail -n 1 | awk '{print $4}')"
 
     - name: Set CI status env
