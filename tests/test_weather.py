@@ -18,15 +18,6 @@ mock_data = {
     "timezone": "GMT",
     "timezone_abbreviation": "GMT",
     "elevation": 152,
-    "current_weather_units": {
-        "time": "iso8601",
-        "interval": "seconds",
-        "temperature": "°C",
-        "windspeed": "km/h",
-        "winddirection": "°",
-        "is_day": "",
-        "weathercode": "wmo code",
-    },
     "current_weather": {
         "time": "2025-05-28T12:00",
         "interval": 900,
@@ -61,8 +52,8 @@ async def test_get_weather_success(client):
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
 
-    assert data["current_weather"]["wind_direction"] == "Южный"
-    assert data["current_weather"]["moscow_time"] == "15:00"
+    assert data["weather"]["current_weather"]["wind_direction"] == "Южный"
+    assert data["weather"]["current_weather"]["moscow_time"] == "15:00"
 
 
 # 2. Тест получения данных из кэша
@@ -92,7 +83,7 @@ async def test_weather_fallback(client):
 
     response = await client.get("api/weather?nocache=true")
     assert response.status_code == 200
-    assert response.json() == WEATHER_FALLBACK
+    assert response.json() == {"weather": WEATHER_FALLBACK, "status": "fallback"}
 
 
 # 4. Тест обработки случая, когда текущая погода отсутствует в ответе API
@@ -103,7 +94,7 @@ async def test_weather_api_no_current_weather(client):
     respx.get(api_url).mock(return_value=Response(200, json=broken_mock_data))
     response = await client.get("api/weather?nocache=true")
     assert response.status_code == 200
-    assert response.json() == WEATHER_FALLBACK
+    assert response.json() == {"weather": WEATHER_FALLBACK, "status": "fallback"}
 
 
 # 5. Тест конвертации градусов ветра в текстовое описание

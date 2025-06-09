@@ -59,21 +59,24 @@
             </div>
             <div class="weather-item">
                 <span class="material-icons" style="color:#1976d2;">cloud</span>
-                Сейчас: {{ weather.weather_text }}
+                Сейчас: {{ weather.weather.current_weather.weather_text }}
             </div>
             <div class="weather-item">
                 <span class="material-icons" style="color:#1976d2;">thermostat</span>
-                Температура: {{ weather.temperature }}°C
+                Температура: {{ weather.weather.current_weather.temperature }}°C
             </div>
             <div class="weather-item">
                 <span class="material-icons" style="color:#1976d2;">air</span>
-                Ветер: {{ weather.windspeed }} м/с ({{ weather.wind_direction }})
+                Ветер: {{ weather.weather.current_weather.windspeed }} м/с ({{
+                weather.weather.current_weather.wind_direction }})
             </div>
             <div class="weather-item">
                 <span class="material-icons" style="color:#1976d2;">schedule</span>
-                Время измерения: {{ weather.moscow_time }}
+                Время измерения: {{ weather.weather.current_weather.moscow_time }}
             </div>
         </div>
+        {% else %}
+        Данные недоступны
         {% endif %}
     </div>
 

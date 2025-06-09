@@ -8,6 +8,7 @@ from fastapi import APIRouter, Request
 from pydantic import BaseModel
 
 from service.decorators import cached_route
+from service.config import CACHE_TTL
 from service.variables import WEATHER_FALLBACK, latitude, longitude
 
 logger = logging.getLogger(__name__)
@@ -135,9 +136,14 @@ async def fetch_weather() -> WeatherResponse | None:
 
 @router.get("/weather", tags=["Weather"])
 @router.get("/weather?nocache=true", tags=["Service"])
-@cached_route("weather_cache", ttl=10, fallback_data=WEATHER_FALLBACK, source="weather")
+@cached_route(
+    "weather_cache",
+    ttl=CACHE_TTL["weather_cache"],
+    fallback_data=WEATHER_FALLBACK,
+    source="weather",
+)
 async def weather(request: Request) -> dict:
     weather_data = await fetch_weather()
     if weather_data is None:
-        return {"url": WEATHER_FALLBACK, "fallback": True}
-    return weather_data.model_dump()
+        return {"weather": WEATHER_FALLBACK, "status": "fallback"}
+    return {"weather": weather_data, "status": "success"}

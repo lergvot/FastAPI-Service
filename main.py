@@ -87,13 +87,13 @@ async def index(request: Request) -> Response:
 
     # Обрабатываем возможные ошибки
     notes = notes_data["notes"] if isinstance(notes_data, dict) else []
-    weather = (
-        weather_data.get("current_weather", {})
-        if isinstance(weather_data, dict)
-        else WEATHER_FALLBACK
-    )
     quote = quote if isinstance(quote, dict) else {}
-    cat = cat if isinstance(cat, dict) else {"url": CAT_FALLBACK}
+    weather = (
+        weather_data
+        if isinstance(weather_data, dict)
+        else {"weather": WEATHER_FALLBACK}
+    )
+    cat = cat if isinstance(cat, dict) else {"cat": CAT_FALLBACK}
 
     visits = increment_visits()
     version = get_version()
