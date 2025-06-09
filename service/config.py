@@ -61,3 +61,7 @@ CACHE_TTL = {
     "weather_cache": 900,
     "cat_cache": 300,
 }
+
+# Максимальное количество заметок и длина заметки
+MAX_NOTES = 10
+MAX_NOTE_LENGTH = 250

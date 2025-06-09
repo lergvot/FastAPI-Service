@@ -11,10 +11,6 @@ TEMPLATES_DIR = BASE_DIR / "templates"
 SERVICE_DIR = BASE_DIR / "service"
 BASE_URL = "http://localhost:8000"
 
-# Максимальное количество заметок и длина заметки
-MAX_NOTES = 10
-MAX_NOTE_LENGTH = 250
-
 # Координаты Москвы
 latitude = 55.75
 longitude = 37.62
