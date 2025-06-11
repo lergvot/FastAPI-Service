@@ -1,11 +1,8 @@
 # main.py
 import asyncio
 import logging
-
-# Проба унификации логирования
 import logging.config
 from contextlib import asynccontextmanager
-from datetime import datetime
 from typing import Any, Dict
 
 import httpx
@@ -100,9 +97,9 @@ async def index(request: Request) -> Response:
     error = request.query_params.get("error")
 
     return templates.TemplateResponse(
+        request,
         "index.html",
         {
-            "request": request,
             "notes": notes,
             "weather": weather,
             "quotes": quote,
@@ -117,4 +114,4 @@ async def index(request: Request) -> Response:
 @app.get("/about.html", include_in_schema=False)
 async def info(request: Request) -> Response:
     """Страница информации"""
-    return templates.TemplateResponse("about.html", {"request": request})
+    return templates.TemplateResponse(request, "about.html", {})
