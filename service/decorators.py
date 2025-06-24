@@ -17,36 +17,40 @@ def cached_route(
     fallback_data: dict | None = None,
     source: str = "auto",
 ):
-    """
-    Кэширует результат функции на время из CACHE_TTL[cache_key] или ttl.
-    Если кэш устарел — обновляет и выставляет TTL заново.
-    """
-
     def decorator(func):
         @wraps(func)
-        async def wrapper(request: Request, *args, **kwargs):
-            use_cache = request.query_params.get("nocache") != "true"
+        async def wrapper(*args, **kwargs):
+            # Получаем request из kwargs или args
+            request = kwargs.get("request")
+            if request is None and args:
+                for arg in args:
+                    if isinstance(arg, Request):
+                        request = arg
+                        break
+
+            use_cache = request and request.query_params.get("nocache") != "true"
+            key = cache_key(*args, **kwargs) if callable(cache_key) else cache_key
+
             if use_cache:
-                cached = await get_cached(cache_key)
+                cached = await get_cached(key)
                 if cached and ttl_logic(cached, source=source):
-                    logger.info(f"✅ Кэш {cache_key}")
+                    logger.info(f"✅ Кэш {key}")
                     return cached
-                logger.info(f"♻️ Кэш {cache_key} устарел или отсутствует")
+                logger.info(f"♻️ Кэш {key} устарел или отсутствует")
 
-            result = await func(request, *args, **kwargs)
+            result = await func(*args, **kwargs)
 
-            # Проверяем флаг fallback
             if isinstance(result, dict) and result.get("fallback"):
-                logger.warning(f"☑️ Используем fallback {cache_key}")
+                logger.warning(f"☑️ Используем fallback {key}")
                 return fallback_data or {}
 
             if result is None:
-                logger.warning(f"☑️ Используем fallback {cache_key}")
+                logger.warning(f"☑️ Используем fallback {key}")
                 return fallback_data or {}
 
             ttl_interval = ttl_logic(result, source=source, return_ttl=True)
-            await set_cached(cache_key, result, ttl=ttl_interval)
-            logger.info(f"🔁 Кэш {cache_key} обновлён, TTL = {ttl_interval}")
+            await set_cached(key, result, ttl=ttl_interval)
+            logger.info(f"🔁 Кэш {key} обновлён, TTL = {ttl_interval}")
 
             return result
 
@@ -56,22 +60,28 @@ def cached_route(
 
 
 def log_route(name: str = ""):
-    """
-    Универсальный лог-декоратор для FastAPI-роутов.
-    Логирует имя маршрута, параметры и время выполнения.
-    """
-
     def decorator(func):
         @wraps(func)
-        async def wrapper(request: Request, *args, **kwargs):
-            route_name = name or request.url.path
+        async def wrapper(*args, **kwargs):
+            # Получаем request из kwargs или args
+            request = kwargs.get("request")
+            if request is None and args:
+                for arg in args:
+                    if isinstance(arg, Request):
+                        request = arg
+                        break
+
+            route_name = name or (request.url.path if request else func.__name__)
             start_time = time.perf_counter()
 
             try:
-                response = await func(request, *args, **kwargs)
+                response = await func(*args, **kwargs)
                 duration = round((time.perf_counter() - start_time) * 1000, 2)
-                logger.info(f"📥 {route_name} | {request.method} | {request.url}")
-                logger.info(f"📤 {route_name} | Ответ за {duration}мс")
+                if request:
+                    logger.info(f"📥 {route_name} | {request.method} | {request.url}")
+                    logger.info(f"📤 {route_name} | Ответ за {duration}мс")
+                else:
+                    logger.info(f"📥 {route_name} | Ответ за {duration}мс")
                 return response
             except Exception as e:
                 logger.exception(f"❌ Ошибка в маршруте {route_name}: {e}")

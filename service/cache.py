@@ -52,6 +52,8 @@ def ttl_logic(
                 source = "cat"
             else:
                 source = None
+        if not source:
+            return 60 if return_ttl else False
 
         # Определяем имя ключа для CACHE_TTL
         cache_key = f"{source}_cache" if source else None

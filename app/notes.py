@@ -3,13 +3,13 @@ import logging
 from typing import List
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, BackgroundTasks, Form, Request, status
+from fastapi import APIRouter, BackgroundTasks, Form, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 
 from service.cache import delete_cached
 from service.decorators import cached_route, log_route
 from service.service import notes_storage
-from service.variables import MAX_NOTE_LENGTH, MAX_NOTES
+from service.config import MAX_NOTE_LENGTH, MAX_NOTES
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -17,16 +17,24 @@ router = APIRouter()
 
 @router.post("/notes/add", tags=["Notes"])
 def add_note(
-    note: str = Form(...), background_tasks: BackgroundTasks = None
+    request: Request, note: str = Form(...), background_tasks: BackgroundTasks = None
 ) -> RedirectResponse:
     notes: List[str] = notes_storage.get_all()
 
+    error_msg = None
     if not note.strip():
-        return _error_redirect("Заметка не может быть пустой")
-    if len(notes) >= MAX_NOTES:
-        return _error_redirect("Превышено максимальное количество заметок")
-    if len(note) > MAX_NOTE_LENGTH:
-        return _error_redirect("Заметка слишком длинная")
+        error_msg = "Заметка не может быть пустой"
+    elif len(notes) >= MAX_NOTES:
+        error_msg = "Превышено максимальное количество заметок"
+    elif len(note) > MAX_NOTE_LENGTH:
+        error_msg = "Заметка слишком длинная"
+
+    if error_msg:
+        # Если запрос ожидает HTML, делаем редирект с ошибкой
+        if "text/html" in request.headers.get("accept", ""):
+            return _error_redirect(error_msg)
+        # Иначе — API-ошибка
+        raise HTTPException(status_code=400, detail={f"error": error_msg})
 
     notes_storage.add(note)
     if background_tasks:
@@ -38,6 +46,9 @@ def add_note(
 def delete_note(
     note_id: int, background_tasks: BackgroundTasks = None
 ) -> RedirectResponse:
+    notes = notes_storage.get_all()
+    if note_id < 0 or note_id >= len(notes):
+        raise HTTPException(status_code=404, detail={f"error": "Заметка не найдена"})
     notes_storage.delete(note_id)
     if background_tasks:
         background_tasks.add_task(delete_cached, "notes")

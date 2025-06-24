@@ -14,21 +14,30 @@ async def test_api_cat_success(client):
     api_mock = respx.get("https://api.thecatapi.com/v1/images/search").mock(
         return_value=Response(
             200,
-            json=[{"id": "abc123", "url": mock_url, "width": 800, "height": 600}],
+            json=[
+                {
+                    "id": "abc123",
+                    "url": mock_url,
+                    "width": 800,
+                    "height": 600,
+                }
+            ],
         )
     )
 
     response = await client.get("/api/cat?nocache=true")
+    data = response.json()
 
     assert api_mock.called, "API не был вызван!"
     assert response.status_code == 200
-    assert response.json()["url"] == mock_url
+    assert data["cat"]["url"] == mock_url
 
 
 # 2. Проверка локального fallback-файла
 @pytest.mark.asyncio
 async def test_static_fallback_image(client):
-    response = await client.get(CAT_FALLBACK)
+    response = await client.get(CAT_FALLBACK["url"])
+
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("image/")
 
@@ -42,9 +51,11 @@ async def test_api_cat_fallback_on_error(client):
     )
 
     response = await client.get("/api/cat?nocache=true")
+    data = response.json()
 
     assert response.status_code == 200
-    assert response.json()["url"] == CAT_FALLBACK
+    assert data["cat"] == CAT_FALLBACK
+    assert data["status"] == "fallback"
 
 
 # Пример использования времени жизни кэша для тестов

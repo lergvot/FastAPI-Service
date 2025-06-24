@@ -20,7 +20,7 @@ async def get_quotes(request: Request) -> Dict[str, List[Dict]]:
     force = request.query_params.get("nocache") == "true"
     quotes = quotes_storage.get_all(force_refresh=force)
     if not quotes:
-        raise HTTPException(status_code=404, detail="Цитаты не найдены.")
+        raise HTTPException(status_code=404, detail={"error": "Цитаты не найдены."})
     return {"quotes": quotes}
 
 
@@ -32,8 +32,8 @@ async def get_random_quote(request: Request) -> Dict:
     force = request.query_params.get("nocache") == "true"
     quotes = quotes_storage.get_all(force_refresh=force)
     if quotes:
-        return random.choice(quotes)
-    raise HTTPException(status_code=404, detail="Цитаты не найдены.")
+        return {"quotes": random.choice(quotes)}
+    raise HTTPException(status_code=404, detail={"error": "Цитаты не найдены."})
 
 
 @router.get("/quotes/search", tags=["Quotes"])
@@ -47,10 +47,10 @@ async def search_quote(
 ) -> Dict[str, List[Dict]]:
     force = request.query_params.get("nocache") == "true" if request else False
     quotes = quotes_storage.get_all(force_refresh=force)
-    results = [q for q in quotes if author.lower() in q.get("Author", "").lower()]
+    results = [q for q in quotes if author.lower() in q.get("author", "").lower()]
     if results:
         return {"quotes": results}
-    raise HTTPException(status_code=404, detail="Цитаты не найдены.")
+    raise HTTPException(status_code=404, detail={"error": "Цитаты не найдены."})
 
 
 @router.get("/quotes/{quote_id}", tags=["Quotes"])
@@ -61,5 +61,5 @@ async def get_quote_by_id(quote_id: int, request: Request) -> Dict[str, Dict]:
     force = request.query_params.get("nocache") == "true"
     quotes = quotes_storage.get_all(force_refresh=force)
     if 0 <= quote_id < len(quotes):
-        return {"quote": quotes[quote_id]}
-    raise HTTPException(status_code=404, detail="Цитата не найдена.")
+        return {"quotes": quotes[quote_id]}
+    raise HTTPException(status_code=404, detail={"error": "Цитаты не найдены."})

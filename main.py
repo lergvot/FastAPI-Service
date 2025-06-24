@@ -1,11 +1,8 @@
 # main.py
 import asyncio
 import logging
-
-# Проба унификации логирования
 import logging.config
 from contextlib import asynccontextmanager
-from datetime import datetime
 from typing import Any, Dict
 
 import httpx
@@ -87,22 +84,22 @@ async def index(request: Request) -> Response:
 
     # Обрабатываем возможные ошибки
     notes = notes_data["notes"] if isinstance(notes_data, dict) else []
-    weather = (
-        weather_data.get("current_weather", {})
-        if isinstance(weather_data, dict)
-        else WEATHER_FALLBACK
-    )
     quote = quote if isinstance(quote, dict) else {}
-    cat = cat if isinstance(cat, dict) else {"url": CAT_FALLBACK}
+    weather = (
+        weather_data
+        if isinstance(weather_data, dict)
+        else {"weather": WEATHER_FALLBACK}
+    )
+    cat = cat if isinstance(cat, dict) else {"cat": CAT_FALLBACK}
 
     visits = increment_visits()
     version = get_version()
     error = request.query_params.get("error")
 
     return templates.TemplateResponse(
+        request,
         "index.html",
         {
-            "request": request,
             "notes": notes,
             "weather": weather,
             "quotes": quote,
@@ -117,4 +114,4 @@ async def index(request: Request) -> Response:
 @app.get("/about.html", include_in_schema=False)
 async def info(request: Request) -> Response:
     """Страница информации"""
-    return templates.TemplateResponse("about.html", {"request": request})
+    return templates.TemplateResponse(request, "about.html", {})

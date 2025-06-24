@@ -6,7 +6,9 @@
     --border-radius: 16px;
     --shadow: 0 2px 8px rgba(25, 118, 210, 0.10);
 }
-html, body {
+
+html,
+body {
     height: 100%;
     margin: 0;
     padding: 0;
@@ -39,6 +41,7 @@ html, body {
     text-align: right;
     background-color: #f0f4fa;
 }
+
 .quote-text {
     color: #333;
     line-height: 1.5;
@@ -46,6 +49,7 @@ html, body {
     text-align: left;
     display: flex;
 }
+
 .quote-author {
     color: #555;
     margin-top: 0.5rem;
@@ -71,6 +75,7 @@ html, body {
     gap: 2rem;
     justify-content: center;
 }
+
 .dashboard-notes {
     background: var(--surface);
     border-radius: var(--border-radius);
@@ -81,6 +86,7 @@ html, body {
     max-width: 45%;
     flex: auto;
 }
+
 .cat {
     background: var(--surface);
     border-radius: var(--border-radius);
@@ -91,6 +97,7 @@ html, body {
     max-width: 45%;
     padding: 2rem 1.5rem 1.5rem 1.5rem;
 }
+
 .cat-image {
     border-radius: var(--border-radius);
     box-shadow: var(--shadow);
@@ -108,6 +115,7 @@ h1 {
     font-size: 2rem;
     text-align: center;
 }
+
 .note-form {
     display: flex;
     gap: 0.5rem;
@@ -116,6 +124,7 @@ h1 {
     padding: 0.5rem;
     box-shadow: 0 1px 3px rgba(25, 118, 210, 0.04);
 }
+
 .note-form input {
     flex: 1;
     border: none;
@@ -124,6 +133,7 @@ h1 {
     padding: 0.75rem 1rem;
     outline: none;
 }
+
 .note-form button {
     background: var(--primary);
     color: #fff;
@@ -138,9 +148,11 @@ h1 {
     align-items: center;
     gap: 0.3rem;
 }
+
 .note-form button:hover {
     background: var(--primary-dark);
 }
+
 ul.notes {
     list-style: none;
     padding: 0;
@@ -149,6 +161,7 @@ ul.notes {
     flex-direction: column;
     gap: 0.7rem;
 }
+
 ul.notes li {
     background: #f8fafc;
     border-radius: var(--border-radius);
@@ -159,6 +172,7 @@ ul.notes li {
     box-shadow: 0 1px 2px rgba(25, 118, 210, 0.03);
     font-size: 1.05rem;
 }
+
 ul.notes li button {
     color: #e53935;
     text-decoration: none;
@@ -167,13 +181,15 @@ ul.notes li button {
     align-items: center;
     transition: color 0.2s;
 }
+
 ul.notes li a:hover {
     color: #b71c1c;
 }
 
 .tooltip-visible {
     position: absolute;
-    background: #e53935; /* Material Red 600 */
+    background: #e53935;
+    /* Material Red 600 */
     color: #fff;
     padding: 10px 20px;
     border-radius: 8px;
@@ -187,15 +203,23 @@ ul.notes li a:hover {
     align-items: center;
     gap: 0.5em;
     animation: fadein 0.3s;
-    border: 1px solid #ffcdd2; /* Light red border for accent */
+    border: 1px solid #ffcdd2;
+    /* Light red border for accent */
 }
+
 .tooltip-visible .material-icons {
     font-size: 1.2em;
     margin-right: 0.3em;
 }
+
 @keyframes fadein {
-    from { opacity: 0; }
-    to   { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 .weather-title {
@@ -207,9 +231,11 @@ ul.notes li a:hover {
     align-items: center;
     gap: 0.5rem;
 }
+
 .weather-title .material-icons {
     font-size: 1.3rem;
 }
+
 .weather-item {
     color: #333;
     font-size: 1rem;
@@ -218,19 +244,31 @@ ul.notes li a:hover {
     gap: 0.5rem;
     margin-bottom: 0.3rem;
 }
+
 .footer {
     background: var(--surface);
     border-radius: var(--border-radius);
     box-shadow: var(--shadow);
     margin: 2rem auto 0 auto;
-    padding: 0.5rem 3rem 0.5rem 3rem;
+    padding: 1rem 3rem;
     max-width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1.5rem;
     font-size: 0.85rem;
     color: #555;
-    min-height: 56px;
 }
 
+.footer-top {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.footer-bottom {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    align-items: center;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    padding-top: 0.5rem;
+}
