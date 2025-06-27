@@ -8,6 +8,7 @@ from typing import Any, Dict
 import httpx
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, Response
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi_cache import FastAPICache
@@ -30,8 +31,6 @@ async def lifespan(app: FastAPI):
     FastAPICache.init(InMemoryBackend())
     logging.info(f"🟢 Приложение запущено")
     yield
-    # logging.info(f"🔴 Приложение остановлено")
-    # Очистка ресурсов
     backend = FastAPICache.get_backend()
     if hasattr(backend, "close"):
         await backend.close()
@@ -43,10 +42,6 @@ app = FastAPI(
     title="FastAPI Playground",
     description="Полигон для изучения FastAPI",
     version=get_version(),
-    contact={
-        "name": "lergvot",
-        "url": "https://lergvot.github.io/",
-    },
     docs_url="/docs",
 )
 
@@ -84,13 +79,13 @@ async def index(request: Request) -> Response:
 
     # Обрабатываем возможные ошибки
     notes = notes_data["notes"] if isinstance(notes_data, dict) else []
-    quote = quote if isinstance(quote, dict) else {}
+    quote = quote["quotes"] if isinstance(quote, dict) and "quotes" in quote else {}
     weather = (
-        weather_data
-        if isinstance(weather_data, dict)
+        weather_data["weather"]
+        if isinstance(weather_data, dict) and "weather" in weather_data
         else {"weather": WEATHER_FALLBACK}
     )
-    cat = cat if isinstance(cat, dict) else {"cat": CAT_FALLBACK}
+    cat = cat["cat"] if isinstance(cat, dict) else {"cat": CAT_FALLBACK}
 
     visits = increment_visits()
     version = get_version()
@@ -102,7 +97,7 @@ async def index(request: Request) -> Response:
         {
             "notes": notes,
             "weather": weather,
-            "quotes": quote,
+            "quote": quote,
             "cat": cat,
             "version": version,
             "visits": visits,
@@ -115,3 +110,10 @@ async def index(request: Request) -> Response:
 async def info(request: Request) -> Response:
     """Страница информации"""
     return templates.TemplateResponse(request, "about.html", {})
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    return FileResponse(
+        str(BASE_DIR / "static" / "favicon.svg"), media_type="image/svg+xml"
+    )
