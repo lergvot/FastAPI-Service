@@ -34,22 +34,18 @@ jobs:
           script: |
             cd /opt/FastAPI-Service
 
-            # Остановка сервиса и очистка логов
-            systemctl stop fastapi.service || true
-            [ -f fastapi_service.log ] && rm fastapi_service.log
-            
-            # Синхронизация последних изменений
+            echo "🔄 Обновление кода из main"
             git fetch origin main --depth=1
             git reset --hard FETCH_HEAD
-            
-            # Обновление зависимостей
-            source venv/bin/activate
-            python -m pip install --upgrade pip
-            pip install -r requirements.txt --no-cache-dir
-            
-            # Запуск сервиса
-            echo "0" > visits.txt
-            systemctl start fastapi.service
+            git clean -xfd
+
+            docker compose down --remove-orphans
+
+            # Сброс счётчика посещений
+            echo "0" > service/visits.txt
+
+            docker compose -f Docker/docker-compose.yml up -d --build
+
             echo "✅ Deployment completed"
 
       - name: Set CI status env
