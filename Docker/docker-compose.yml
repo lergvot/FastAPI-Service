@@ -1,0 +1,14 @@
+# docker-compose.yml
+version: '3.9'
+
+services:
+  fastapi-service:
+    container_name: fastapi-service
+    build:
+      context: ..
+      dockerfile: Docker/Dockerfile
+    ports:
+      - "8000:8000"  # наружный порт:внутри контейнера
+    environment:
+      - ENV=production
+    restart: unless-stopped
