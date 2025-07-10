@@ -1,8 +1,6 @@
 # service/service.py
 import json
 import logging
-import os
-import subprocess
 from pathlib import Path
 from typing import List, Optional
 
@@ -37,24 +35,7 @@ def increment_visits() -> int:
     return visits
 
 
-def get_git_version() -> str:
-    try:
-        return (
-            subprocess.check_output(
-                ["git", "rev-parse", "--short", "HEAD"],
-                cwd=BASE_DIR,
-                stderr=subprocess.DEVNULL,
-            )
-            .decode("utf-8")
-            .strip()
-        )
-    except (subprocess.CalledProcessError, OSError):
-        return "unknown"
-
-
 def get_version() -> str:
-    env = os.getenv("ENV", "prod")
-    git_hash = get_git_version()
 
     if VERSION_FILE.exists():
         try:
@@ -65,10 +46,7 @@ def get_version() -> str:
     else:
         version = "0.0.0"
 
-    if env == "prod":
-        return f"v{version}"
-    else:
-        return f"v{version} ({env} {git_hash})"
+    return f"v{version}"
 
 
 class JsonStorage:
