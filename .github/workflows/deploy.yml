@@ -12,7 +12,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -26,11 +26,13 @@ jobs:
 
       - name: Deploy to server
         uses: appleboy/ssh-action@master
+        continue-on-error: true
         with:
-          host: ${{ secrets.HOST }}
-          port: ${{ secrets.PORT }}
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
           username: root
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: POSTGRES_USER,POSTGRES_PASSWORD,POSTGRES_DB
           script: |
             cd /opt/FastAPI-Service
 
@@ -39,17 +41,35 @@ jobs:
             git reset --hard FETCH_HEAD
             git clean -xfd
 
-            docker compose down --remove-orphans
+            # Остановка старых контейнеров
+            docker compose -f Docker/docker-compose.yml down --remove-orphans
 
-            # Сброс счётчика посещений
-            echo "0" > service/visits.txt
+            # Сборка и запуск
+            docker compose -f Docker/docker-compose.yml up -d --build \
+            -e POSTGRES_USER="$POSTGRES_USER" \
+            -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
+            -e POSTGRES_DB="$POSTGRES_DB"
 
-            docker compose -f Docker/docker-compose.yml up -d --build
+            # Проверка статуса контейнеров
+            sleep 10  # Ждем запуска
+            if ! docker compose -f Docker/docker-compose.yml ps | grep -q "running"; then
+              echo "❌ Ошибка: контейнеры не запущены"
+              exit 1
+            fi
 
             echo "✅ Deployment completed"
+        env:
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
 
       - name: Set CI status env
-        run: echo "STATUS=✅ Успешно" >> $GITHUB_ENV
+        run: |
+          if [ "${{ steps.deploy.outcome }}" = "success" ]; then
+            echo "STATUS=✅ Успешно" >> $GITHUB_ENV
+          else
+            echo "STATUS=❌ Ошибка" >> $GITHUB_ENV
+          fi
 
       - name: Prepare CI payload
         id: prepare_payload

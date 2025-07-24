@@ -9,30 +9,9 @@ from service.variables import (
     NOTES_FILE,
     QUOTE_FILE,
     VERSION_FILE,
-    VISITS_FILE,
 )
 
 logger = logging.getLogger(__name__)
-
-
-def get_visits() -> int:
-    if VISITS_FILE.exists():
-        try:
-            with open(VISITS_FILE, "r", encoding="utf-8") as f:
-                return int(f.read().strip())
-        except (ValueError, OSError):
-            return 0
-    return 0
-
-
-def increment_visits() -> int:
-    visits = get_visits() + 1
-    try:
-        with open(VISITS_FILE, "w", encoding="utf-8") as f:
-            f.write(str(visits))
-    except (OSError, TypeError):
-        pass
-    return visits
 
 
 def get_version() -> str:

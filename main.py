@@ -7,20 +7,23 @@ from typing import Any, Dict
 
 import httpx
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request, Response
+from fastapi import Depends, FastAPI, Request, Response
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.inmemory import InMemoryBackend
+from sqlalchemy.orm import Session
 
 from app.cat import router as cat_router
 from app.notes import router as notes_router
 from app.quotes import router as quotes_router
 from app.weather import router as weather_router
+from db.session import get_db
 from service.config import LOGGING_CONFIG
-from service.service import get_version, increment_visits
+from service.service import get_version
 from service.variables import BASE_DIR, BASE_URL, CAT_FALLBACK, WEATHER_FALLBACK
+from service.visits import log_visit
 
 logging.config.dictConfig(LOGGING_CONFIG)
 
@@ -67,7 +70,10 @@ async def fetch_data(url: str) -> Dict[str, Any] | None:
 
 
 @app.get("/", include_in_schema=False)
-async def index(request: Request) -> Response:
+async def index(
+    request: Request,
+    db: Session = Depends(get_db),
+) -> Response:
     """Главная страница"""
     weather_data, cat, quote, notes_data = await asyncio.gather(
         fetch_data(f"{BASE_URL}/api/weather"),
@@ -87,7 +93,7 @@ async def index(request: Request) -> Response:
     )
     cat = cat["cat"] if isinstance(cat, dict) else {"cat": CAT_FALLBACK}
 
-    visits = increment_visits()
+    visits = log_visit(request, db)
     version = get_version()
     error = request.query_params.get("error")
 
