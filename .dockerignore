@@ -9,3 +9,5 @@ tests/
 .dockerignore
 *.sqlite3
 *.db
+.env
+pg_data/
