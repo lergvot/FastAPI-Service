@@ -3,16 +3,11 @@ param(
     [string]$Description
 )
 
-# Запускаем контейнер для генерации миграции
-docker-compose run --rm fastapi-service `
-    alembic -c /app/alembic.ini revision --autogenerate -m "$Description"
+# 1. Генерируем миграцию внутри контейнера
+docker-compose -f .\Docker\docker-compose.yml exec fastapi-service alembic revision --autogenerate -m "$Description"
 
-# Проверяем наличие созданных файлов миграции
-$versionsPath = "./alembic/versions"
-if (Test-Path -Path $versionsPath) {
-    Write-Host "Миграция создана в $versionsPath"
-}
-else {
-    Write-Host "Ошибка: файлы миграции не найдены в $versionsPath"
-    exit 1
-}
+# 2. Определяем ID контейнера
+$containerId = docker-compose -f .\Docker\docker-compose.yml ps -q fastapi-service
+
+# 3. Копируем ВСЕ миграции из контейнера
+docker cp "${containerId}:/app/alembic/versions" ./alembic/
