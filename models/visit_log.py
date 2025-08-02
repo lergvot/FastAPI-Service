@@ -9,7 +9,7 @@ class VisitLog(Base):
     __tablename__ = "visit_log"
 
     id = Column(Integer, primary_key=True, index=True)
-    timestamp = Column(
+    visited_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
     path = Column(String(255), nullable=False)

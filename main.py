@@ -18,12 +18,14 @@ from sqlalchemy.orm import Session
 from app.cat import router as cat_router
 from app.notes import router as notes_router
 from app.quotes import router as quotes_router
+from app.visits import router as visits_router
 from app.weather import router as weather_router
 from db.session import get_db
+from middleware.log_api_requests import APILogMiddleware
 from service.config import LOGGING_CONFIG
 from service.service import get_version
 from service.variables import BASE_DIR, BASE_URL, CAT_FALLBACK, WEATHER_FALLBACK
-from service.visits import log_visit
+from service.logging_utils import log_visit
 
 logging.config.dictConfig(LOGGING_CONFIG)
 
@@ -47,12 +49,13 @@ app = FastAPI(
     version=get_version(),
     docs_url="/docs",
 )
-
+app.add_middleware(APILogMiddleware)
 
 app.include_router(weather_router, prefix="/api")
 app.include_router(cat_router, prefix="/api")
 app.include_router(quotes_router, prefix="/api")
 app.include_router(notes_router, prefix="/api")
+app.include_router(visits_router, prefix="/api")
 
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
@@ -75,13 +78,15 @@ async def index(
     db: Session = Depends(get_db),
 ) -> Response:
     """Главная страница"""
-    weather_data, cat, quote, notes_data = await asyncio.gather(
+    weather_data, cat, quote, notes_data, visits = await asyncio.gather(
         fetch_data(f"{BASE_URL}/api/weather"),
         fetch_data(f"{BASE_URL}/api/cat"),
         fetch_data(f"{BASE_URL}/api/quotes/random"),
         fetch_data(f"{BASE_URL}/api/notes"),
+        fetch_data(f"{BASE_URL}/api/visits"),
         return_exceptions=True,  # Позволяет обрабатывать исключения как результаты
     )
+    log_visit(request, db)
 
     # Обрабатываем возможные ошибки
     notes = notes_data["notes"] if isinstance(notes_data, dict) else []
@@ -93,7 +98,11 @@ async def index(
     )
     cat = cat["cat"] if isinstance(cat, dict) else {"cat": CAT_FALLBACK}
 
-    visits = log_visit(request, db)
+    visits_data = (
+        visits["visits"]
+        if isinstance(visits, dict) and "visits" in visits
+        else {"total": "Unknown", "last_24h": "-", "unique": "-"}
+    )
     version = get_version()
     error = request.query_params.get("error")
 
@@ -106,7 +115,7 @@ async def index(
             "quote": quote,
             "cat": cat,
             "version": version,
-            "visits": visits,
+            "visits": visits_data,
             "error": error,
         },
     )
@@ -114,7 +123,6 @@ async def index(
 
 @app.get("/about.html", include_in_schema=False)
 async def info(request: Request) -> Response:
-    """Страница информации"""
     return templates.TemplateResponse(request, "about.html", {})
 
 

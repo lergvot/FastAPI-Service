@@ -10,13 +10,14 @@ from alembic import context
 # Импортируем модели для поддержки autogenerate
 from db.base import Base
 from models.visit_log import VisitLog
+from models.api_log import APILog
 
 # Получаем настройки из переменных окружения
-DB_USER = os.getenv("POSTGRES_USER", "postgres")
+DB_USER = os.getenv("POSTGRES_USER", "postgres_f")
 DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "password")
 DB_HOST = os.getenv("POSTGRES_HOST", "localhost")
 DB_PORT = os.getenv("POSTGRES_PORT", "5432")
-DB_NAME = os.getenv("POSTGRES_DB", "postgres")
+DB_NAME = os.getenv("POSTGRES_DB", "postgres_f")
 
 # Формируем URL подключения с экранированием
 safe_user = quote_plus(DB_USER)

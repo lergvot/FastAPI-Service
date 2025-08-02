@@ -1,4 +1,6 @@
 # tests/conftest.py
+import os
+
 import pytest
 import pytest_asyncio
 from asgi_lifespan import LifespanManager
@@ -7,6 +9,8 @@ from fastapi_cache.backends.inmemory import InMemoryBackend
 from httpx import ASGITransport, AsyncClient
 
 from main import app
+
+os.environ["TESTING"] = "1"
 
 
 @pytest_asyncio.fixture
