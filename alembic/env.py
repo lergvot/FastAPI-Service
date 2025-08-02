@@ -10,6 +10,7 @@ from alembic import context
 # Импортируем модели для поддержки autogenerate
 from db.base import Base
 from models.visit_log import VisitLog
+from models.api_log import APILog
 
 # Получаем настройки из переменных окружения
 DB_USER = os.getenv("POSTGRES_USER", "postgres_f")

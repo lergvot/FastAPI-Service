@@ -21,9 +21,11 @@ from app.quotes import router as quotes_router
 from app.visits import router as visits_router
 from app.weather import router as weather_router
 from db.session import get_db
+from middleware.log_api_requests import APILogMiddleware
 from service.config import LOGGING_CONFIG
 from service.service import get_version
 from service.variables import BASE_DIR, BASE_URL, CAT_FALLBACK, WEATHER_FALLBACK
+from service.logging_utils import log_visit
 
 logging.config.dictConfig(LOGGING_CONFIG)
 
@@ -47,7 +49,7 @@ app = FastAPI(
     version=get_version(),
     docs_url="/docs",
 )
-
+app.add_middleware(APILogMiddleware)
 
 app.include_router(weather_router, prefix="/api")
 app.include_router(cat_router, prefix="/api")
@@ -84,6 +86,7 @@ async def index(
         fetch_data(f"{BASE_URL}/api/visits"),
         return_exceptions=True,  # Позволяет обрабатывать исключения как результаты
     )
+    log_visit(request, db)
 
     # Обрабатываем возможные ошибки
     notes = notes_data["notes"] if isinstance(notes_data, dict) else []
