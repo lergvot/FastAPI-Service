@@ -10,7 +10,8 @@ from main import fetch_data
 # 1. Проверка моками роутов на главной странице
 @respx.mock
 @pytest.mark.asyncio
-async def test_index_route(client):
+async def test_index_route(client, mocker):
+    mocker.patch("main.log_visit")  # Мокируем функцию которая обращается к базе данных
     respx.get("/api/weather").mock(
         return_value=Response(
             200, json={"weather": {"current_weather": {"weather_text": "Пасмурно"}}}
@@ -72,7 +73,8 @@ async def test_fetch_data_handles_error(monkeypatch):
 # 4. Обработка query параметра ?error=...
 @respx.mock
 @pytest.mark.asyncio
-async def test_query_error_parameter(client):
+async def test_query_error_parameter(client, mocker):
+    mocker.patch("main.log_visit")
     respx.get("/api/weather").mock(
         return_value=Response(
             200, json={"weather": {"current_weather": {"weather_text": "Пасмурно"}}}

@@ -1,15 +1,20 @@
 # middleware/log_api_requests.py
+import logging
+import os
 import time
 
 from fastapi import Request
 from sqlalchemy.orm import Session
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from db.session import get_db
+from db.session import engine
 from models.api_log import APILog
 
-from service.logging_utils import log_visit
-from db.session import get_db
+logger = logging.getLogger(__name__)
+
+# Пути, которые не нужно логировать
+EXCLUDE_PATHS_START = ("/static", "/docs", "/redoc", "/openapi.json")
+EXCLUDE_PATHS_FULL = {"/favicon.ico", "/health"}
 
 
 class APILogMiddleware(BaseHTTPMiddleware):
@@ -18,31 +23,35 @@ class APILogMiddleware(BaseHTTPMiddleware):
 
         response = await call_next(request)
 
-        duration = (time.time() - start_time) * 1000  # в миллисекундах
+        duration_ms = round((time.time() - start_time) * 1000, 2)
 
-        # IP из заголовка от Nginx
+        # На тестах не пишем в БД
+        if os.getenv("TESTING"):
+            return response
+
+        # Собираем данные для логирования
         ip_address = request.headers.get("x-real-ip") or request.client.host
         method = request.method
         path = request.url.path
         status_code = response.status_code
 
-        # Игнорируем служебные ручки типа /docs и /favicon.ico
-        if not path.startswith("/static") and not path.startswith("/docs"):
-            try:
-                db: Session = next(get_db())
+        # Игнорируем служебные пути и статические файлы
+        if path.startswith(EXCLUDE_PATHS_START) or path in EXCLUDE_PATHS_FULL:
+            return response
+
+        # Логируем в БД
+        try:
+            with Session(engine) as db:
                 log = APILog(
-                    method=method,
-                    path=path,
-                    ip_address=ip_address,
+                    method=method[:10],  # Ограничиваем длину
+                    path=path[:255],
+                    ip_address=(ip_address or "")[:45],
                     status_code=status_code,
-                    duration_ms=round(duration, 2),
+                    duration_ms=duration_ms,
                 )
                 db.add(log)
                 db.commit()
-            except Exception as e:
-                # Логируем только ошибку, но не падаем
-                import logging
-
-                logging.error(f"Ошибка логирования API: {e}")
+        except Exception as e:
+            logger.error(f"Ошибка при логировании API-запроса: {e}", exc_info=True)
 
         return response
