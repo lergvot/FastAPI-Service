@@ -25,6 +25,11 @@ async def test_index_route(client):
     respx.get("/api/notes").mock(
         return_value=Response(200, json={"notes": ["заметка1", "заметка2"]})
     )
+    respx.get("/api/visits").mock(
+        return_value=Response(
+            200, json={"visits": {"total": 5, "last_24h": 2, "unique": 3}}
+        )
+    )
     response = await client.get("/")
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
@@ -81,6 +86,11 @@ async def test_query_error_parameter(client):
     )
     respx.get("/api/notes").mock(
         return_value=Response(200, json={"notes": ["заметка1", "заметка2"]})
+    )
+    respx.get("/api/visits").mock(
+        return_value=Response(
+            200, json={"visits": {"total": 5, "last_24h": 2, "unique": 3}}
+        )
     )
     response = await client.get("/?error=ошибка123")
     assert response.status_code == 200
