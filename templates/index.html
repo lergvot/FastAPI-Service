@@ -122,7 +122,10 @@
         <div class="footer-top">
             <p>Погода: <a href="https://open-meteo.com/en/docs" target="_blank">Open-Meteo API</a></p>
             <p>Котики: <a href="https://developers.thecatapi.com/" target="_blank">TheCatAPI</a></p>
-            <p>API: <a href="/docs" target="_blank">Swagger API</a></p>
+            <div class="footer-api">
+                <p>API: <a href="/docs" target="_blank">Swagger UI</a></p>
+                <p style="margin-left: 25px;"><a href="/redoc" target="_blank">ReDoc</a></p>
+            </div>
             <p>Для чего всё это: <a href="/about.html" target="_self">About</a></p>
             <p>Версия: {{ version }}</p>
             <p>Посещений: {{ visits.total }}</p>

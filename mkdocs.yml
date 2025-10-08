@@ -1,0 +1,45 @@
+# mkdocs.yml
+site_name: Документация FastAPI Service
+dev_addr: "0.0.0.0:8001"
+theme:
+  name: material
+  palette:
+    # Светлая тема
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: amber
+      toggle:
+        icon: material/brightness-7
+        name: Переключить на тёмную тему
+    # Тёмная тема
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Переключить на светлую тему
+
+nav:
+  - Home: index.md
+  - Overview: overview.md
+  - API: api.md
+  - Developer Guide: dev_guide.md
+  - Code Reference:
+      - Visits: reference/visits.md
+      - Middleware: reference/middleware.md
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [../app] # Путь к вашему коду
+          options:
+            show_source: true
+            docstring_style: google
+            show_submodules: true
+            separate_signature: true
+            show_root_heading: true
+            heading_level: 2

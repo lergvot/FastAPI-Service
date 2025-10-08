@@ -1,3 +1,5 @@
+# migrate.ps1
+# Скрипт для генерации миграций Alembic и копирования их в репозиторий
 param(
     [Parameter(Mandatory = $true)]
     [string]$Description

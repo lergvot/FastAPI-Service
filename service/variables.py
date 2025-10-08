@@ -47,3 +47,10 @@ WEATHER_FALLBACK = {
         "moscow_time": datetime.now().strftime("%H:%M"),
     },
 }
+
+# Заглушка посещений
+VISITS_FALLBACK = {
+    "total": "-",
+    "last_24h": "-",
+    "unique": "-",
+}
