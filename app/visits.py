@@ -39,7 +39,7 @@ async def get_visits(request: Request, db: Session = Depends(get_db)) -> dict:
             "visits": {
                 "total": 100,
                 "last_24h": 25,
-                "unique": 15
+                "unique_last_24h": 15
             },
             "status": "success"
         }
@@ -59,7 +59,7 @@ async def get_visits(request: Request, db: Session = Depends(get_db)) -> dict:
         "visits": {
             "total": total_visits,
             "last_24h": last_day_count,
-            "unique": unique_visits,
+            "unique_last_24h": unique_visits,
         },
         "status": "success",
     }
