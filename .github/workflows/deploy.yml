@@ -1,5 +1,5 @@
 # deploy.yml
-name: Deploy FastAPI-Service
+name: Deploy fastapi-service
 
 on:
   push:
@@ -17,7 +17,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.13.3'
+          python-version: "3.13.3"
 
       - name: Install dependencies
         run: |
@@ -35,7 +35,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           envs: POSTGRES_USER,POSTGRES_PASSWORD,POSTGRES_DB
           script: |
-            cd /opt/FastAPI-Service
+            cd /opt/fastapi-service
 
             echo "🔄 Обновление кода из main"
             git fetch origin main --depth=1

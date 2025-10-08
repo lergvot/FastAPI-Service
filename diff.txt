@@ -1,222 +1,312 @@
-diff --git a/Docker/docker-compose.yml b/Docker/docker-compose.yml
-index b962abd..366ca20 100644
---- a/Docker/docker-compose.yml
-+++ b/Docker/docker-compose.yml
-@@ -34,6 +34,8 @@ services:
-       POSTGRES_DB: ${POSTGRES_DB}
-     volumes:
-       - pg_data:/var/lib/postgresql/data
-+    ports:
-+      - "127.0.0.1:5432:5432"
-     networks:
-       - backend
+diff --git a/.github/workflows/deploy.yml b/.github/workflows/deploy.yml
+index 897a205..9f6e1fd 100644
+--- a/.github/workflows/deploy.yml
++++ b/.github/workflows/deploy.yml
+@@ -1,5 +1,5 @@
+ # deploy.yml
+-name: Deploy FastAPI-Service
++name: Deploy fastapi-service
  
-diff --git a/alembic/env.py b/alembic/env.py
-index ad717a3..ce390de 100644
---- a/alembic/env.py
-+++ b/alembic/env.py
-@@ -13,11 +13,11 @@ from models.visit_log import VisitLog
- from models.api_log import APILog
+ on:
+   push:
+@@ -17,7 +17,7 @@ jobs:
+       - name: Set up Python
+         uses: actions/setup-python@v4
+         with:
+-          python-version: '3.13.3'
++          python-version: "3.13.3"
  
- # Получаем настройки из переменных окружения
--DB_USER = os.getenv("POSTGRES_USER", "postgres_f")
--DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "password")
--DB_HOST = os.getenv("POSTGRES_HOST", "localhost")
--DB_PORT = os.getenv("POSTGRES_PORT", "5432")
--DB_NAME = os.getenv("POSTGRES_DB", "postgres_f")
-+DB_USER = os.getenv("POSTGRES_USER")
-+DB_PASSWORD = os.getenv("POSTGRES_PASSWORD")
-+DB_HOST = os.getenv("POSTGRES_HOST")
-+DB_PORT = os.getenv("POSTGRES_PORT")
-+DB_NAME = os.getenv("POSTGRES_DB")
+       - name: Install dependencies
+         run: |
+@@ -35,7 +35,7 @@ jobs:
+           key: ${{ secrets.SSH_PRIVATE_KEY }}
+           envs: POSTGRES_USER,POSTGRES_PASSWORD,POSTGRES_DB
+           script: |
+-            cd /opt/FastAPI-Service
++            cd /opt/fastapi-service
  
- # Формируем URL подключения с экранированием
- safe_user = quote_plus(DB_USER)
-diff --git a/app/visits.py b/app/visits.py
-index 77395af..9ee061d 100644
---- a/app/visits.py
-+++ b/app/visits.py
-@@ -1,4 +1,13 @@
- # app/visits.py
-+"""
-+Модуль для отслеживания и анализа посещений API.
-+
-+Предоставляет эндпоинты для получения статистики посещений, включая:
-+- Общее количество посещений
-+- Количество посещений за последние 24 часа
-+- Количество уникальных посетителей за последние 24 часа
-+"""
-+
- from datetime import datetime, timedelta
- 
- from fastapi import APIRouter, Depends, Request
-@@ -12,6 +21,29 @@ router = APIRouter()
- 
- @router.get("/visits", tags=["Visits"])
- async def get_visits(request: Request, db: Session = Depends(get_db)) -> dict:
-+    """
-+    Получение статистики посещений.
-+
-+    Args:
-+        request (Request): Объект запроса FastAPI
-+        db (Session): Сессия базы данных, внедряемая через FastAPI dependency
-+
-+    Returns:
-+        dict: Словарь со статистикой посещений, содержащий:
-+            - total: общее количество посещений
-+            - last_24h: количество посещений за последние 24 часа
-+            - unique: количество уникальных посетителей за последние 24 часа
-+
-+    Example:
-+        {
-+            "visits": {
-+                "total": 100,
-+                "last_24h": 25,
-+                "unique": 15
-+            },
-+            "status": "success"
-+        }
-+    """
-     total_visits = db.query(VisitLog).count()
-     last_day = datetime.now() - timedelta(days=1)
-     last_day_count = db.query(VisitLog).filter(VisitLog.visited_at >= last_day).count()
-diff --git a/main.py b/main.py
-index 449da12..dd7bccf 100644
---- a/main.py
-+++ b/main.py
-@@ -23,9 +23,15 @@ from app.weather import router as weather_router
- from db.session import get_db
- from middleware.log_api_requests import APILogMiddleware
- from service.config import LOGGING_CONFIG
--from service.service import get_version
--from service.variables import BASE_DIR, BASE_URL, CAT_FALLBACK, WEATHER_FALLBACK
- from service.logging_utils import log_visit
-+from service.service import get_version
-+from service.variables import (
-+    BASE_DIR,
-+    BASE_URL,
-+    CAT_FALLBACK,
-+    VISITS_FALLBACK,
-+    WEATHER_FALLBACK,
-+)
- 
- logging.config.dictConfig(LOGGING_CONFIG)
- 
-@@ -101,7 +107,7 @@ async def index(
-     visits_data = (
-         visits["visits"]
-         if isinstance(visits, dict) and "visits" in visits
--        else {"total": "Unknown", "last_24h": "-", "unique": "-"}
-+        else {"visits": VISITS_FALLBACK}
-     )
-     version = get_version()
-     error = request.query_params.get("error")
-diff --git a/middleware/log_api_requests.py b/middleware/log_api_requests.py
-index 21fae40..56485c8 100644
---- a/middleware/log_api_requests.py
-+++ b/middleware/log_api_requests.py
-@@ -18,7 +18,39 @@ EXCLUDE_PATHS_FULL = {"/favicon.ico", "/health"}
- 
- 
- class APILogMiddleware(BaseHTTPMiddleware):
-+    """Middleware для логирования API запросов в базу данных.
-+
-+    Отслеживает и логирует следующие параметры API запросов:
-+        - HTTP метод
-+        - Путь запроса
-+        - IP адрес
-+        - Код статуса ответа
-+        - Длительность запроса
-+
-+    Атрибуты:
-+        EXCLUDE_PATHS_START: Кортеж префиксов путей, которые не нужно логировать
-+        EXCLUDE_PATHS_FULL: Множество полных путей, которые не нужно логировать
-+
-+    Примечание:
-+        - Логи сохраняются в базу данных через модель APILog
-+        - Логирование отключается при запуске тестов (когда установлена переменная TESTING)
-+        - Статические файлы и служебные эндпоинты (/docs, /redoc и т.д.) не логируются
-+    """
-+
-     async def dispatch(self, request: Request, call_next):
-+        """Обработка и логирование API запроса.
-+
-+        Аргументы:
-+                request (Request): Входящий HTTP запрос
-+                call_next: Следующий обработчик в цепочке middleware
-+
-+        Возвращает:
-+                Response: Ответ от следующего обработчика
-+
-+        Примечание:
-+                Сохраняет детали запроса в базу данных, включая длительность,
-+                код статуса и IP адрес
-+        """
-         start_time = time.time()
- 
-         response = await call_next(request)
-diff --git a/migrate.ps1 b/migrate.ps1
-index 26062bb..41555fa 100644
---- a/migrate.ps1
-+++ b/migrate.ps1
-@@ -1,3 +1,5 @@
-+# migrate.ps1
-+# Скрипт для генерации миграций Alembic и копирования их в репозиторий
- param(
-     [Parameter(Mandatory = $true)]
-     [string]$Description
-diff --git a/requirements-dev.txt b/requirements-dev.txt
-index a84b405..f86f2f3 100644
---- a/requirements-dev.txt
-+++ b/requirements-dev.txt
-@@ -3,4 +3,7 @@ pytest==8.3.5
- pytest_asyncio==1.0.0
- pytest-mock==3.14.1
- respx==0.22.0
--coverage==7.8.2
+             echo "🔄 Обновление кода из main"
+             git fetch origin main --depth=1
+@@ -106,4 +106,4 @@ jobs:
+             exit 1
+           else
+             echo "✅ CI-отчёт успешно отправлен. Код ответа: $HTTP_CODE"
+-          fi
 \ No newline at end of file
-+coverage==7.8.2
-+mkdocs
-+mkdocs-material
-+mkdocstrings[python]
++          fi
+diff --git a/.gitignore b/.gitignore
+index c3351b8..46b1d70 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -159,4 +159,5 @@ cython_debug/
+ #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
+ #.idea/
+ TODO.md
+-docker-compose.override.yml
 \ No newline at end of file
-diff --git a/service/variables.py b/service/variables.py
-index 2bf9828..bd45287 100644
---- a/service/variables.py
-+++ b/service/variables.py
-@@ -47,3 +47,10 @@ WEATHER_FALLBACK = {
-         "moscow_time": datetime.now().strftime("%H:%M"),
-     },
- }
-+
-+# Заглушка посещений
-+VISITS_FALLBACK = {
-+    "total": "-",
-+    "last_24h": "-",
-+    "unique": "-",
-+}
-diff --git a/service/version.txt b/service/version.txt
-index 6f30e95..46bc287 100644
---- a/service/version.txt
-+++ b/service/version.txt
-@@ -1 +1 @@
--0.7.12
-\ No newline at end of file
-+0.7.20
-\ No newline at end of file
++diff.txt
++docker-compose.override.yml
+diff --git a/diff.txt b/diff.txt
+index addb97d..e69de29 100644
+--- a/diff.txt
++++ b/diff.txt
+@@ -1,222 +0,0 @@
+-diff --git a/Docker/docker-compose.yml b/Docker/docker-compose.yml
+-index b962abd..366ca20 100644
+---- a/Docker/docker-compose.yml
+-+++ b/Docker/docker-compose.yml
+-@@ -34,6 +34,8 @@ services:
+-       POSTGRES_DB: ${POSTGRES_DB}
+-     volumes:
+-       - pg_data:/var/lib/postgresql/data
+-+    ports:
+-+      - "127.0.0.1:5432:5432"
+-     networks:
+-       - backend
+- 
+-diff --git a/alembic/env.py b/alembic/env.py
+-index ad717a3..ce390de 100644
+---- a/alembic/env.py
+-+++ b/alembic/env.py
+-@@ -13,11 +13,11 @@ from models.visit_log import VisitLog
+- from models.api_log import APILog
+- 
+- # Получаем настройки из переменных окружения
+--DB_USER = os.getenv("POSTGRES_USER", "postgres_f")
+--DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "password")
+--DB_HOST = os.getenv("POSTGRES_HOST", "localhost")
+--DB_PORT = os.getenv("POSTGRES_PORT", "5432")
+--DB_NAME = os.getenv("POSTGRES_DB", "postgres_f")
+-+DB_USER = os.getenv("POSTGRES_USER")
+-+DB_PASSWORD = os.getenv("POSTGRES_PASSWORD")
+-+DB_HOST = os.getenv("POSTGRES_HOST")
+-+DB_PORT = os.getenv("POSTGRES_PORT")
+-+DB_NAME = os.getenv("POSTGRES_DB")
+- 
+- # Формируем URL подключения с экранированием
+- safe_user = quote_plus(DB_USER)
+-diff --git a/app/visits.py b/app/visits.py
+-index 77395af..9ee061d 100644
+---- a/app/visits.py
+-+++ b/app/visits.py
+-@@ -1,4 +1,13 @@
+- # app/visits.py
+-+"""
+-+Модуль для отслеживания и анализа посещений API.
+-+
+-+Предоставляет эндпоинты для получения статистики посещений, включая:
+-+- Общее количество посещений
+-+- Количество посещений за последние 24 часа
+-+- Количество уникальных посетителей за последние 24 часа
+-+"""
+-+
+- from datetime import datetime, timedelta
+- 
+- from fastapi import APIRouter, Depends, Request
+-@@ -12,6 +21,29 @@ router = APIRouter()
+- 
+- @router.get("/visits", tags=["Visits"])
+- async def get_visits(request: Request, db: Session = Depends(get_db)) -> dict:
+-+    """
+-+    Получение статистики посещений.
+-+
+-+    Args:
+-+        request (Request): Объект запроса FastAPI
+-+        db (Session): Сессия базы данных, внедряемая через FastAPI dependency
+-+
+-+    Returns:
+-+        dict: Словарь со статистикой посещений, содержащий:
+-+            - total: общее количество посещений
+-+            - last_24h: количество посещений за последние 24 часа
+-+            - unique: количество уникальных посетителей за последние 24 часа
+-+
+-+    Example:
+-+        {
+-+            "visits": {
+-+                "total": 100,
+-+                "last_24h": 25,
+-+                "unique": 15
+-+            },
+-+            "status": "success"
+-+        }
+-+    """
+-     total_visits = db.query(VisitLog).count()
+-     last_day = datetime.now() - timedelta(days=1)
+-     last_day_count = db.query(VisitLog).filter(VisitLog.visited_at >= last_day).count()
+-diff --git a/main.py b/main.py
+-index 449da12..dd7bccf 100644
+---- a/main.py
+-+++ b/main.py
+-@@ -23,9 +23,15 @@ from app.weather import router as weather_router
+- from db.session import get_db
+- from middleware.log_api_requests import APILogMiddleware
+- from service.config import LOGGING_CONFIG
+--from service.service import get_version
+--from service.variables import BASE_DIR, BASE_URL, CAT_FALLBACK, WEATHER_FALLBACK
+- from service.logging_utils import log_visit
+-+from service.service import get_version
+-+from service.variables import (
+-+    BASE_DIR,
+-+    BASE_URL,
+-+    CAT_FALLBACK,
+-+    VISITS_FALLBACK,
+-+    WEATHER_FALLBACK,
+-+)
+- 
+- logging.config.dictConfig(LOGGING_CONFIG)
+- 
+-@@ -101,7 +107,7 @@ async def index(
+-     visits_data = (
+-         visits["visits"]
+-         if isinstance(visits, dict) and "visits" in visits
+--        else {"total": "Unknown", "last_24h": "-", "unique": "-"}
+-+        else {"visits": VISITS_FALLBACK}
+-     )
+-     version = get_version()
+-     error = request.query_params.get("error")
+-diff --git a/middleware/log_api_requests.py b/middleware/log_api_requests.py
+-index 21fae40..56485c8 100644
+---- a/middleware/log_api_requests.py
+-+++ b/middleware/log_api_requests.py
+-@@ -18,7 +18,39 @@ EXCLUDE_PATHS_FULL = {"/favicon.ico", "/health"}
+- 
+- 
+- class APILogMiddleware(BaseHTTPMiddleware):
+-+    """Middleware для логирования API запросов в базу данных.
+-+
+-+    Отслеживает и логирует следующие параметры API запросов:
+-+        - HTTP метод
+-+        - Путь запроса
+-+        - IP адрес
+-+        - Код статуса ответа
+-+        - Длительность запроса
+-+
+-+    Атрибуты:
+-+        EXCLUDE_PATHS_START: Кортеж префиксов путей, которые не нужно логировать
+-+        EXCLUDE_PATHS_FULL: Множество полных путей, которые не нужно логировать
+-+
+-+    Примечание:
+-+        - Логи сохраняются в базу данных через модель APILog
+-+        - Логирование отключается при запуске тестов (когда установлена переменная TESTING)
+-+        - Статические файлы и служебные эндпоинты (/docs, /redoc и т.д.) не логируются
+-+    """
+-+
+-     async def dispatch(self, request: Request, call_next):
+-+        """Обработка и логирование API запроса.
+-+
+-+        Аргументы:
+-+                request (Request): Входящий HTTP запрос
+-+                call_next: Следующий обработчик в цепочке middleware
+-+
+-+        Возвращает:
+-+                Response: Ответ от следующего обработчика
+-+
+-+        Примечание:
+-+                Сохраняет детали запроса в базу данных, включая длительность,
+-+                код статуса и IP адрес
+-+        """
+-         start_time = time.time()
+- 
+-         response = await call_next(request)
+-diff --git a/migrate.ps1 b/migrate.ps1
+-index 26062bb..41555fa 100644
+---- a/migrate.ps1
+-+++ b/migrate.ps1
+-@@ -1,3 +1,5 @@
+-+# migrate.ps1
+-+# Скрипт для генерации миграций Alembic и копирования их в репозиторий
+- param(
+-     [Parameter(Mandatory = $true)]
+-     [string]$Description
+-diff --git a/requirements-dev.txt b/requirements-dev.txt
+-index a84b405..f86f2f3 100644
+---- a/requirements-dev.txt
+-+++ b/requirements-dev.txt
+-@@ -3,4 +3,7 @@ pytest==8.3.5
+- pytest_asyncio==1.0.0
+- pytest-mock==3.14.1
+- respx==0.22.0
+--coverage==7.8.2
+-\ No newline at end of file
+-+coverage==7.8.2
+-+mkdocs
+-+mkdocs-material
+-+mkdocstrings[python]
+-\ No newline at end of file
+-diff --git a/service/variables.py b/service/variables.py
+-index 2bf9828..bd45287 100644
+---- a/service/variables.py
+-+++ b/service/variables.py
+-@@ -47,3 +47,10 @@ WEATHER_FALLBACK = {
+-         "moscow_time": datetime.now().strftime("%H:%M"),
+-     },
+- }
+-+
+-+# Заглушка посещений
+-+VISITS_FALLBACK = {
+-+    "total": "-",
+-+    "last_24h": "-",
+-+    "unique": "-",
+-+}
+-diff --git a/service/version.txt b/service/version.txt
+-index 6f30e95..46bc287 100644
+---- a/service/version.txt
+-+++ b/service/version.txt
+-@@ -1 +1 @@
+--0.7.12
+-\ No newline at end of file
+-+0.7.20
+-\ No newline at end of file
+-diff --git a/templates/index.html b/templates/index.html
+-index 5260388..94a2551 100644
+---- a/templates/index.html
+-+++ b/templates/index.html
+-@@ -122,7 +122,10 @@
+-         <div class="footer-top">
+-             <p>Погода: <a href="https://open-meteo.com/en/docs" target="_blank">Open-Meteo API</a></p>
+-             <p>Котики: <a href="https://developers.thecatapi.com/" target="_blank">TheCatAPI</a></p>
+--            <p>API: <a href="/docs" target="_blank">Swagger API</a></p>
+-+            <div class="footer-api">
+-+                <p>API: <a href="/docs" target="_blank">Swagger UI</a></p>
+-+                <p style="margin-left: 25px;"><a href="/redoc" target="_blank">ReDoc</a></p>
+-+            </div>
+-             <p>Для чего всё это: <a href="/about.html" target="_self">About</a></p>
+-             <p>Версия: {{ version }}</p>
+-             <p>Посещений: {{ visits.total }}</p>
+diff --git a/docs/dev_guide.md b/docs/dev_guide.md
+index 47bb753..355e966 100644
+--- a/docs/dev_guide.md
++++ b/docs/dev_guide.md
+@@ -12,8 +12,8 @@
+ ### 1. Подготовка репозитория
+ 
+ ```bash
+-git clone https://github.com/lergvot/FastAPI-Service
+-cd FastAPI-Service
++git clone https://github.com/lergvot/fastapi-service
++cd fastapi-service
+ ```
+ 
+ ### 2. Виртуальное окружение
+@@ -99,7 +99,7 @@ pip install mkdocs mkdocstrings mkdocstrings-python mkdocs-material
+ ### Структура документации
+ 
+ ```tree
+-FastAPI-Service/              # Корень проекта
++fastapi-service/              # Корень проекта
+ ├── docs/                     # Директория с документацией
+ │   ├── index.md             # Главная страница
+ │   ├── api/                 # Документация API
 diff --git a/templates/index.html b/templates/index.html
-index 5260388..94a2551 100644
+index 94a2551..d6b3e95 100644
 --- a/templates/index.html
 +++ b/templates/index.html
-@@ -122,7 +122,10 @@
-         <div class="footer-top">
-             <p>Погода: <a href="https://open-meteo.com/en/docs" target="_blank">Open-Meteo API</a></p>
-             <p>Котики: <a href="https://developers.thecatapi.com/" target="_blank">TheCatAPI</a></p>
--            <p>API: <a href="/docs" target="_blank">Swagger API</a></p>
-+            <div class="footer-api">
-+                <p>API: <a href="/docs" target="_blank">Swagger UI</a></p>
-+                <p style="margin-left: 25px;"><a href="/redoc" target="_blank">ReDoc</a></p>
-+            </div>
-             <p>Для чего всё это: <a href="/about.html" target="_self">About</a></p>
-             <p>Версия: {{ version }}</p>
+@@ -131,7 +131,7 @@
              <p>Посещений: {{ visits.total }}</p>
+         </div>
+         <div class="footer-bottom">
+-            <a href="https://github.com/lergvot/FastAPI-Service" target="_blank">GitHub</a>
++            <a href="https://github.com/lergvot/fastapi-service" target="_blank">GitHub</a>
+             <p>© 2025</p>
+         </div>
+ 
