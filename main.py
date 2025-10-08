@@ -23,9 +23,15 @@ from app.weather import router as weather_router
 from db.session import get_db
 from middleware.log_api_requests import APILogMiddleware
 from service.config import LOGGING_CONFIG
-from service.service import get_version
-from service.variables import BASE_DIR, BASE_URL, CAT_FALLBACK, WEATHER_FALLBACK
 from service.logging_utils import log_visit
+from service.service import get_version
+from service.variables import (
+    BASE_DIR,
+    BASE_URL,
+    CAT_FALLBACK,
+    VISITS_FALLBACK,
+    WEATHER_FALLBACK,
+)
 
 logging.config.dictConfig(LOGGING_CONFIG)
 
@@ -101,7 +107,7 @@ async def index(
     visits_data = (
         visits["visits"]
         if isinstance(visits, dict) and "visits" in visits
-        else {"total": "Unknown", "last_24h": "-", "unique": "-"}
+        else {"visits": VISITS_FALLBACK}
     )
     version = get_version()
     error = request.query_params.get("error")

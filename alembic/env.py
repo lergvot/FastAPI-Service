@@ -13,11 +13,11 @@ from models.visit_log import VisitLog
 from models.api_log import APILog
 
 # Получаем настройки из переменных окружения
-DB_USER = os.getenv("POSTGRES_USER", "postgres_f")
-DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "password")
-DB_HOST = os.getenv("POSTGRES_HOST", "localhost")
-DB_PORT = os.getenv("POSTGRES_PORT", "5432")
-DB_NAME = os.getenv("POSTGRES_DB", "postgres_f")
+DB_USER = os.getenv("POSTGRES_USER")
+DB_PASSWORD = os.getenv("POSTGRES_PASSWORD")
+DB_HOST = os.getenv("POSTGRES_HOST")
+DB_PORT = os.getenv("POSTGRES_PORT")
+DB_NAME = os.getenv("POSTGRES_DB")
 
 # Формируем URL подключения с экранированием
 safe_user = quote_plus(DB_USER)

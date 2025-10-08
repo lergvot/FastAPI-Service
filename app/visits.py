@@ -1,4 +1,13 @@
 # app/visits.py
+"""
+Модуль для отслеживания и анализа посещений API.
+
+Предоставляет эндпоинты для получения статистики посещений, включая:
+- Общее количество посещений
+- Количество посещений за последние 24 часа
+- Количество уникальных посетителей за последние 24 часа
+"""
+
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, Request
@@ -12,6 +21,29 @@ router = APIRouter()
 
 @router.get("/visits", tags=["Visits"])
 async def get_visits(request: Request, db: Session = Depends(get_db)) -> dict:
+    """
+    Получение статистики посещений.
+
+    Args:
+        request (Request): Объект запроса FastAPI
+        db (Session): Сессия базы данных, внедряемая через FastAPI dependency
+
+    Returns:
+        dict: Словарь со статистикой посещений, содержащий:
+            - total: общее количество посещений
+            - last_24h: количество посещений за последние 24 часа
+            - unique: количество уникальных посетителей за последние 24 часа
+
+    Example:
+        {
+            "visits": {
+                "total": 100,
+                "last_24h": 25,
+                "unique": 15
+            },
+            "status": "success"
+        }
+    """
     total_visits = db.query(VisitLog).count()
     last_day = datetime.now() - timedelta(days=1)
     last_day_count = db.query(VisitLog).filter(VisitLog.visited_at >= last_day).count()
