@@ -124,14 +124,17 @@
             <p>Котики: <a href="https://developers.thecatapi.com/" target="_blank">TheCatAPI</a></p>
             <div class="footer-api">
                 <p>API: <a href="/docs" target="_blank">Swagger UI</a></p>
-                <p style="margin-left: 25px;"><a href="/redoc" target="_blank">ReDoc</a></p>
+                <p style="margin-left: 28px;"><a href="/redoc" target="_blank">ReDoc</a></p>
             </div>
             <p>Для чего всё это: <a href="/about.html" target="_self">About</a></p>
             <p>Версия: {{ version }}</p>
-            <p>Посещений: {{ visits.total }}</p>
+            <div class="footer-visits">
+                <p>Посещений: {{ visits.total }}</p>
+                <p>Уникальных за сутки: {{ visits.unique_last_24h }}</p>
+            </div>
         </div>
         <div class="footer-bottom">
-            <a href="https://github.com/lergvot/FastAPI-Service" target="_blank">GitHub</a>
+            <a href="https://github.com/lergvot/fastapi-service" target="_blank">GitHub</a>
             <p>© 2025</p>
         </div>
 

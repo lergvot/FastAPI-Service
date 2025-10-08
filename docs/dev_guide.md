@@ -12,8 +12,8 @@
 ### 1. Подготовка репозитория
 
 ```bash
-git clone https://github.com/lergvot/FastAPI-Service
-cd FastAPI-Service
+git clone https://github.com/lergvot/fastapi-service
+cd fastapi-service
 ```
 
 ### 2. Виртуальное окружение
@@ -99,7 +99,7 @@ pip install mkdocs mkdocstrings mkdocstrings-python mkdocs-material
 ### Структура документации
 
 ```tree
-FastAPI-Service/              # Корень проекта
+fastapi-service/              # Корень проекта
 ├── docs/                     # Директория с документацией
 │   ├── index.md             # Главная страница
 │   ├── api/                 # Документация API
