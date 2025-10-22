@@ -7,22 +7,12 @@ on:
 
 jobs:
   deploy:
-    name: Deploy to Server
+    name: Deploy pipeline
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.13.3"
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+        uses: actions/checkout@v5
 
       - name: Deploy to server
         id: deploy

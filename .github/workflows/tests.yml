@@ -2,8 +2,6 @@
 name: Run Tests
 
 on:
-  push:
-    branches: [dev]
   pull_request:
     branches: [main]
 
@@ -12,54 +10,54 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.13.3"
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13.9"
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install -r requirements-dev.txt
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
 
-    - name: Run tests with coverage
-      id: pytest_step
-      run: coverage run -m pytest -v tests --disable-warnings
+      - name: Run tests with coverage
+        id: pytest_step
+        run: coverage run -m pytest -v tests --disable-warnings
 
-    - name: Generate coverage report
-      run: |
-        coverage report -m
-        echo "Total coverage: $(coverage report | tail -n 1 | awk '{print $4}')"
+      - name: Generate coverage report
+        run: |
+          coverage report -m
+          echo "Total coverage: $(coverage report | tail -n 1 | awk '{print $4}')"
 
-    - name: Set CI status env
-      run: echo "STATUS=✅ Успешно">> $GITHUB_ENV
-    
-    - name: Prepare CI payload
-      id: prepare_payload
-      run: |
-        echo "Создаём JSON для CI-репорта"
-        echo '{
-          "secret": "'"${{ secrets.CI_SECRET }}"'",
-          "project": "'"${{ github.repository }}"'",
-          "status": "'"$STATUS"'",
-          "commit": "'"$(git rev-parse --short HEAD)"'",
-          "author": "'"${{ github.actor }}"'",
-          "branch": "'"${{ github.ref_name }}"'",
-          "workflow": "'"${{ github.workflow }}"'",
-          "event_name": "'"${{ github.event_name }}"'",
-          "message": "'"${{ github.event.head_commit.message }}"'",
-          "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-          "repo_url": "https://github.com/${{ github.repository }}"
-        }' > ci_payload.json
-        echo "payload_file=ci_payload.json">> $GITHUB_OUTPUT
+      - name: Set CI status env
+        run: echo "STATUS=✅ Успешно">> $GITHUB_ENV
 
-    - name: Send CI Report to Telegram Bot
-      env:
-        CI_ENDPOINT: ${{ secrets.CI_ENDPOINT }}
-      run: |
+      - name: Prepare CI payload
+        id: prepare_payload
+        run: |
+          echo "Создаём JSON для CI-репорта"
+          echo '{
+            "secret": "'"${{ secrets.CI_SECRET }}"'",
+            "project": "'"${{ github.repository }}"'",
+            "status": "'"$STATUS"'",
+            "commit": "'"$(git rev-parse --short HEAD)"'",
+            "author": "'"${{ github.actor }}"'",
+            "branch": "'"${{ github.ref_name }}"'",
+            "workflow": "'"${{ github.workflow }}"'",
+            "event_name": "'"${{ github.event_name }}"'",
+            "message": "'"${{ github.event.head_commit.message }}"'",
+            "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+            "repo_url": "https://github.com/${{ github.repository }}"
+          }' > ci_payload.json
+          echo "payload_file=ci_payload.json">> $GITHUB_OUTPUT
+
+      - name: Send CI Report to Telegram Bot
+        env:
+          CI_ENDPOINT: ${{ secrets.CI_ENDPOINT }}
+        run: |
           echo "📡 Отправляем CI-отчёт..."
           PAYLOAD_FILE="${{ steps.prepare_payload.outputs.payload_file }}"
           echo "Используем файл: $PAYLOAD_FILE"
