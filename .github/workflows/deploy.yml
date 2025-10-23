@@ -32,16 +32,24 @@ jobs:
             git reset --hard FETCH_HEAD
             git clean -xfd
 
-            # Остановка старых контейнеров
+            echo "🛑 Остановка старых контейнеров..."
             docker compose -f Docker/docker-compose.yml down --remove-orphans
 
-            # Сборка и запуск
+            echo "Сборка и запуск..."
             docker compose -f Docker/docker-compose.yml up -d --build
 
-            # Проверка статуса контейнеров
-            sleep 10  # Ждем запуска
-            if ! docker compose -f Docker/docker-compose.yml ps | grep -q "running"; then
-              echo "❌ Ошибка: контейнеры не запущены"
+            sleep 10
+            echo "Проверка статуса контейнеров..."
+            if ! docker compose -f Docker/docker-compose.yml ps --services --filter status=running | grep -q "postgres-db"; then
+              echo "❌ Ошибка: сервис postgres-db не запущен"
+              exit 1
+            fi
+            if ! docker compose -f Docker/docker-compose.yml ps --services --filter status=running | grep -q "fastapi-service"; then
+              echo "❌ Ошибка: сервис fastapi-service не запущен"
+              exit 1
+            fi
+            if ! docker compose -f Docker/docker-compose.yml ps --services --filter status=running | grep -q "nginx-fastapi"; then
+              echo "❌ Ошибка: сервис nginx-fastapi не запущен"
               exit 1
             fi
 
@@ -83,7 +91,7 @@ jobs:
         env:
           CI_ENDPOINT: ${{ secrets.CI_ENDPOINT }}
         run: |
-          echo "📡 Отправляем CI-отчёт..."
+          echo "Отправляем CI-отчёт..."
           PAYLOAD_FILE="${{ steps.prepare_payload.outputs.payload_file }}"
           echo "Используем файл: $PAYLOAD_FILE"
           HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$CI_ENDPOINT" \

@@ -1,13 +1,16 @@
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-*.log
-venv/
+# Dev/Test
 tests/
 .git/
-.dockerignore
-*.sqlite3
-*.db
 .env
-pg_data/
+venv/
+
+# Cache
+__pycache__/
+*.pyc
+
+# Data
+*.db
+*.sqlite3
+data/
+*.log
+logs/

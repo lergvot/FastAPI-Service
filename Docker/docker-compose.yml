@@ -1,4 +1,6 @@
 # docker-compose.yml
+name: fastapi-project
+
 services:
   fastapi-service:
     container_name: fastapi-service
@@ -33,8 +35,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - pg_data:/var/lib/postgresql/data
-    #ports:
-    #  - "127.0.0.1:5432:5432" убрал из-за конфликта с override в dev
+    ports:
+      - "127.0.0.1:5432:5432"
     networks:
       - backend
 
@@ -42,7 +44,7 @@ services:
     build:
       context: ..
       dockerfile: Docker/Dockerfile.nginx
-    container_name: nginx-proxy
+    container_name: nginx-fastapi
     ports:
       - "80:80"
       # - "443:443" если нужен HTTPS
