@@ -25,13 +25,8 @@ from middleware.log_api_requests import APILogMiddleware
 from service.config import LOGGING_CONFIG
 from service.logging_utils import log_visit
 from service.service import get_version
-from service.variables import (
-    BASE_DIR,
-    BASE_URL,
-    CAT_FALLBACK,
-    VISITS_FALLBACK,
-    WEATHER_FALLBACK,
-)
+from service.variables import (BASE_DIR, BASE_URL, CAT_FALLBACK,
+                               VISITS_FALLBACK, WEATHER_FALLBACK)
 
 logging.config.dictConfig(LOGGING_CONFIG)
 

@@ -13,7 +13,6 @@ venv/
 *.db
 *.sqlite3
 logs/
-data/
 
 # Docker
 docker-compose.override.yml
