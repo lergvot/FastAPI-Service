@@ -1,6 +1,5 @@
 # docker-compose.yml
-name: fastapi-project
-
+name: fastapi-app
 services:
   fastapi-service:
     container_name: fastapi-service
@@ -25,9 +24,8 @@ services:
       - backend
 
   db:
-    image: postgres:16
-    container_name: postgres-db
-    restart: unless-stopped
+    image: postgres:16-alpine
+    container_name: postgres-fastapi
     environment:
       ENV: "prod"
       POSTGRES_USER: ${POSTGRES_USER}
@@ -39,6 +37,7 @@ services:
       - "127.0.0.1:5432:5432"
     networks:
       - backend
+    restart: unless-stopped
 
   nginx:
     build:
